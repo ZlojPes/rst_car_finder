@@ -17,6 +17,7 @@ public class Main {
             "engine[]=0&fuel=0&gear=0&drive=0&results=1&saled=0&notcust=-1&sort=1&city=0&region[]=23&region[]=24&" +
             "region[2]=5&region[3]=8&region[4]=3&region[5]=2&model[]=142&model[]=146&model[2]=149&from=sform&start=";
     private Map<Integer, rst.Car> base = new HashMap<>();
+    private Pattern prefixPattern;
     private Pattern idPattern;
     private Pattern pricePattern;
     private Pattern buildYearPattern;
@@ -32,8 +33,10 @@ public class Main {
     private Pattern telPattern;
     private Pattern photoPattrrn;
     private Pattern idFromFolder;
+    private Pattern enginePattern;
 
     private Main() {
+        prefixPattern = Pattern.compile("^\\D{4,13}=");
         datePattern = compile("(размещено|обновлено).+?</div>");
         idPattern = compile("\\d{7,}\\.html$");
         pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
@@ -49,11 +52,11 @@ public class Main {
         telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
         photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?\\];");
         idFromFolder = compile("^\\d{7,}");
+        enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
     }
 
-// TODO обмен, объем двигателя;
-// TODO логический ребилд первичной инициализации базы;
-// TODO Pagination;
+    // TODO логический ребилд первичной инициализации базы;
+    // TODO Pagination;
 
     public static void main(String[] args) {
         new Main().go();
@@ -63,7 +66,7 @@ public class Main {
         long start = System.currentTimeMillis();
         if (mainDir.exists()) {
             System.out.println("from file");
-            initCarsFromFile();
+            initBaseFromFile();
         } else {
             if (!mainDir.mkdir()) {
                 System.out.println("Error happens during creating work directory!");
@@ -95,7 +98,7 @@ public class Main {
 
     private void report(Car car) {
         System.out.printf("%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %s%n",
-                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isWasFreshAdded(), car.getPrice(),
+                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.freshDetected(), car.getPrice(),
                 car.getBuildYear(), car.getDetectedDate(), car.getDescription());
     }
 
@@ -148,9 +151,9 @@ public class Main {
     }
 
     private Car getCarFromHtml(String carHtml) {
-        String date = null, link, brand, model, description = null, region = null;
+        String date = null, link, brand, model, description = null, region = null, engine = null;
         int price = -1, id = -1, buildYear = -1;
-        boolean isSoldOut = false, wasFreshAdded = false;
+        boolean isSoldOut = false, freshDetected = false, exchange = false;
         Matcher m = linkToCarPage.matcher(carHtml);
         if (m.find()) {
             link = m.group();
@@ -169,7 +172,10 @@ public class Main {
             isSoldOut = true;
         }
         if (carHtml.contains("rst-ocb-i-s-fresh")) {
-            wasFreshAdded = true;
+            freshDetected = true;
+        }
+        if (carHtml.contains("ocb-i-exchange")) {
+            exchange = true;
         }
         Matcher m3 = pricePattern.matcher(carHtml);
         if (m3.find()) {
@@ -210,9 +216,102 @@ public class Main {
         if (m7.find()) {
             region = m7.group().substring(41, m7.group().length() - 7);
         }
-        Car car = new Car(id, brand, model, region, link, price, buildYear, date, description, isSoldOut, wasFreshAdded);
+        Matcher m8 = enginePattern.matcher(carHtml);
+        if (m8.find()) {
+            engine = m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3);
+        }
+        Car car = new Car(id, brand, model, engine, region, link, price, exchange, buildYear, date, description, isSoldOut, freshDetected);
         addCarDetails(car);
         return car;
+    }
+
+    private void initBaseFromFile() {
+        String[] folders = mainDir.list();
+        if (folders != null) {
+            nextFolder:
+            for (String s : folders) {
+                Car car = new Car();
+                Matcher m = idFromFolder.matcher(s);
+                if (m.find()) {
+                    car.setId(Integer.parseInt(m.group()));
+                } else {
+                    continue;
+                }
+                try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + s + "\\" + "data.txt")))) {
+                    String line, prefix = "", value;
+                    while ((line = reader.readLine()) != null) {
+                        if ((value = getValue(line)) == null) {
+                            continue;
+                        }
+                        Matcher pr = prefixPattern.matcher(line);
+                        if (pr.find()) {
+                            prefix = pr.group().substring(0, pr.group().length() - 1);
+                        }
+                        switch (prefix) {
+                            case ("isSoldOut"):
+                                if (Boolean.valueOf(value)) {
+                                    continue nextFolder;
+                                }
+                            case ("brand"):
+                                car.setBrand(value);
+                                break;
+                            case ("model"):
+                                car.setModel(value);
+                                break;
+                            case ("engine"):
+                                car.setEngine(value);
+                                break;
+                            case ("buildYear"):
+                                car.setBuildYear(Integer.parseInt(value));
+                                break;
+                            case ("price"):
+                                car.setPrice(Integer.parseInt(value));
+                                break;
+                            case ("exchange"):
+                                car.setExchange(Boolean.valueOf(value));
+                                break;
+                            case ("region"):
+                                car.setRegion(value);
+                                break;
+                            case ("town"):
+                                car.setTown(value);
+                                break;
+                            case ("name"):
+                                car.setOwnerName(value);
+                                break;
+                            case ("contact"):
+                                car.setContacts(value.split(", "));
+                                break;
+                            case ("description"):
+                                car.setDescription(value);
+                                break;
+                            case ("freshDetected"):
+                                car.setFreshDetected(Boolean.valueOf(value));
+                                break;
+                            case ("date"):
+                                car.setDetectedDate(value);
+                                break;
+                            case ("images"):
+                                int[] img;
+                                String[] sub = value.substring(1, value.length() - 1).split(", ");
+                                img = new int[sub.length];
+                                for (int i = 0; i < img.length; i++) {
+                                    img[i] = Integer.parseInt(sub[i]);
+                                    car.setImages(img);
+                                }
+                                break;
+                            case ("link"):
+                                car.setLink(value);
+                                break;
+                        }
+                    }
+                    report(car);
+                    base.put(car.getId(), car);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void initCarsFromFile() {
@@ -221,10 +320,10 @@ public class Main {
             nextFolder:
             for (String s : folders) {
                 try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + s + "\\" + "data.txt")))) {
-                    String line, detectedDate = null, link = null, brand = null, model = null, region = null, town = null, description = null, ownerName = null;
+                    String line, detectedDate = null, link = null, brand = null, model = null, region = null, town = null, description = null, ownerName = null, engine = null;
                     int price = -1, id = -1, buildYear = -1;
                     int[] img = null;
-                    boolean wasFreshAdded = false;
+                    boolean freshDetected = false, change = false;
                     String[] contacts = null;
                     Matcher m = idFromFolder.matcher(s);
                     if (m.find()) {
@@ -243,6 +342,8 @@ public class Main {
                             brand = value;
                         } else if (line.startsWith("model=\"")) {
                             model = value;
+                        } else if (line.startsWith("engine=\"")) {
+                            engine = value;
                         } else if (line.startsWith("buildYear=\"")) {
                             try {
                                 buildYear = Integer.parseInt(value);
@@ -265,8 +366,8 @@ public class Main {
                             contacts = value.split(", ");
                         } else if (line.startsWith("description=\"")) {
                             description = value;
-                        } else if (line.startsWith("wasFreshAdded=\"")) {
-                            wasFreshAdded = Boolean.valueOf(value);
+                        } else if (line.startsWith("freshDetected=\"")) {
+                            freshDetected = Boolean.valueOf(value);
                         } else if (line.startsWith("date=\"")) {
                             detectedDate = value;
                         } else if (line.startsWith("images=\"")) {
@@ -279,7 +380,7 @@ public class Main {
                             link = value;
                         }
                     }
-                    Car car = new Car(id, brand, model, region, link, price, buildYear, detectedDate, description, false, wasFreshAdded);
+                    Car car = new Car(id, brand, model, engine, region, link, price, change, buildYear, detectedDate, description, false, freshDetected);
                     car.setTown(town);
                     car.setImages(img);
                     car.setContacts(contacts);
@@ -313,9 +414,13 @@ public class Main {
                 writer.newLine();
                 writer.write("model=\"" + car.getModel() + "\"");
                 writer.newLine();
+                writer.write("engine=\"" + car.getEngine() + "\"");
+                writer.newLine();
                 writer.write("buildYear=\"" + car.getBuildYear() + "\"");
                 writer.newLine();
                 writer.write("price=\"" + car.getPrice() + "\"");
+                writer.newLine();
+                writer.write("exchange=\"" + car.isExchange() + "\"");
                 writer.newLine();
                 writer.write("region=\"" + car.getRegion() + "\"");
                 writer.newLine();
@@ -327,7 +432,7 @@ public class Main {
                 writer.newLine();
                 writer.write("description=\"" + car.getDescription() + "\"");
                 writer.newLine();
-                writer.write("wasFreshAdded=\"" + car.isWasFreshAdded() + "\"");
+                writer.write("freshDetected=\"" + car.freshDetected() + "\"");
                 writer.newLine();
                 writer.write("date=\"" + car.getDetectedDate() + "\"");
                 writer.newLine();

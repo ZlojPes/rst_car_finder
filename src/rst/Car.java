@@ -8,6 +8,7 @@ public class Car implements Comparable<Car> {
     private String ownerName;
     private String region;
     private String town;
+    private String engine;
     private int price;
     private int buildYear;
     private String detectedDate;
@@ -15,9 +16,10 @@ public class Car implements Comparable<Car> {
     private String[] contacts;
     private int[] images;
     private boolean isSoldOut;
-    private boolean wasFreshAdded;
+    private boolean freshDetected;
+    private boolean exchange;
 
-    Car(int id, String brand, String model, String region, String link, int price, int buildYear, String detectedDate, String description, boolean isSoldOut, boolean wasFreshAdded) {
+    Car(int id, String brand, String model, String engine, String region, String link, int price, boolean exchange, int buildYear, String detectedDate, String description, boolean isSoldOut, boolean freshDetected) {
         this.id = id;
         this.brand = brand;
         this.model = model;
@@ -28,8 +30,12 @@ public class Car implements Comparable<Car> {
         this.detectedDate = detectedDate;
         this.description = description;
         this.isSoldOut = isSoldOut;
-        this.wasFreshAdded = wasFreshAdded;
+        this.freshDetected = freshDetected;
+        this.exchange = exchange;
+        this.engine = engine;
     }
+
+    Car(){}
 
 
     int getPrice() {
@@ -44,8 +50,56 @@ public class Car implements Comparable<Car> {
         return buildYear;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
+    public void setEngine(String engine) {
+        this.engine = engine;
+    }
+
+    public void setBuildYear(int buildYear) {
+        this.buildYear = buildYear;
+    }
+
+    public void setDetectedDate(String detectedDate) {
+        this.detectedDate = detectedDate;
+    }
+
+    public void setFreshDetected(boolean freshDetected) {
+        this.freshDetected = freshDetected;
+    }
+
+    public void setExchange(boolean exchange) {
+        this.exchange = exchange;
+    }
+
     int getId() {
         return id;
+    }
+
+    public String getEngine() {
+        return engine;
+    }
+
+    public boolean isExchange() {
+        return exchange;
     }
 
     String getTown() {
@@ -116,8 +170,8 @@ public class Car implements Comparable<Car> {
         isSoldOut = soldOut;
     }
 
-    boolean isWasFreshAdded() {
-        return wasFreshAdded;
+    boolean freshDetected() {
+        return freshDetected;
     }
 
 
