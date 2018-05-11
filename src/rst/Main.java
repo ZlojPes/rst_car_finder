@@ -35,7 +35,16 @@ public class Main {
     private Pattern idFromFolder;
     private Pattern enginePattern;
 
-    private Main() {
+    // TODO логический ребилд первичной инициализации базы;
+    // TODO Pagination;
+
+    public static void main(String[] args) {
+        Main main = new Main();
+        main.initPatterns();
+        main.go();
+    }
+
+    private void initPatterns() {
         prefixPattern = Pattern.compile("^\\D{4,13}=");
         datePattern = compile("(размещено|обновлено).+?</div>");
         idPattern = compile("\\d{7,}\\.html$");
@@ -50,16 +59,9 @@ public class Main {
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
         namePattern = compile("<strong>.+</strong>");
         telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
-        photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?\\];");
+        photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?];");
         idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-    }
-
-    // TODO логический ребилд первичной инициализации базы;
-    // TODO Pagination;
-
-    public static void main(String[] args) {
-        new Main().go();
     }
 
     private void go() {
@@ -72,26 +74,34 @@ public class Main {
                 System.out.println("Error happens during creating work directory!");
                 System.exit(1);
             }
-            System.out.println("from html");
-            try {
-                String html = HtmlGetter.getURLSource(startUrl + 1);
-                ArrayList<String> carsHtml = new ArrayList<>(10);
-                Matcher m = carHtmlBlock.matcher(html);
-                while (m.find()) {
-                    carsHtml.add(m.group());
-                }
-                ImageGetter imageGetter = new ImageGetter();
-                for (String carHtml : carsHtml) {
-                    Car car = getCarFromHtml(carHtml);
-                    if (car != null) {
-                        createCarFolder(car);
-                        report(car);
-                    }
-                    imageGetter.downloadAllImages(car);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+        }
+        System.out.println("from html");
+        try {
+            String html = HtmlGetter.getURLSource(startUrl + 1);
+            ArrayList<String> carsHtml = new ArrayList<>(10);
+            Matcher m = carHtmlBlock.matcher(html);
+            while (m.find()) {
+                carsHtml.add(m.group());
             }
+            ImageGetter imageGetter = new ImageGetter();
+            for (String carHtml : carsHtml) {
+                Car car = getCarFromHtml(carHtml);
+                if (car != null) {
+                    int id = car.getId();
+                    if (!base.containsKey(id)) {
+                        createCarFolder(car);
+                        base.put(id, car);
+                        report(car);
+                        if (car.getImages() != null) {
+                            imageGetter.downloadAllImages(car);
+                        }
+                    }else {
+                        Car carFromBase = base.get(id);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         System.out.println(System.currentTimeMillis() - start);
     }
@@ -292,6 +302,9 @@ public class Main {
                                 car.setDetectedDate(value);
                                 break;
                             case ("images"):
+                                if (value.equals("null")) {
+                                    break;
+                                }
                                 int[] img;
                                 String[] sub = value.substring(1, value.length() - 1).split(", ");
                                 img = new int[sub.length];
@@ -307,86 +320,6 @@ public class Main {
                     }
                     report(car);
                     base.put(car.getId(), car);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void initCarsFromFile() {
-        String[] folders = mainDir.list();
-        if (folders != null) {
-            nextFolder:
-            for (String s : folders) {
-                try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + s + "\\" + "data.txt")))) {
-                    String line, detectedDate = null, link = null, brand = null, model = null, region = null, town = null, description = null, ownerName = null, engine = null;
-                    int price = -1, id = -1, buildYear = -1;
-                    int[] img = null;
-                    boolean freshDetected = false, change = false;
-                    String[] contacts = null;
-                    Matcher m = idFromFolder.matcher(s);
-                    if (m.find()) {
-                        id = Integer.parseInt(m.group());
-                    }
-                    while ((line = reader.readLine()) != null) {
-                        String value = getValue(line);
-                        if (value == null) {
-                            continue;
-                        }
-                        if (line.startsWith("isSoldOut=\"")) {
-                            if (value.equals("true")) {
-                                continue nextFolder;
-                            }
-                        } else if (line.startsWith("brand=\"")) {
-                            brand = value;
-                        } else if (line.startsWith("model=\"")) {
-                            model = value;
-                        } else if (line.startsWith("engine=\"")) {
-                            engine = value;
-                        } else if (line.startsWith("buildYear=\"")) {
-                            try {
-                                buildYear = Integer.parseInt(value);
-                            } catch (NumberFormatException e) {
-                                buildYear = -1;
-                            }
-                        } else if (line.startsWith("price=\"")) {
-                            try {
-                                price = Integer.parseInt(value);
-                            } catch (NumberFormatException e) {
-                                price = -1;
-                            }
-                        } else if (line.startsWith("region=\"")) {
-                            region = value;
-                        } else if (line.startsWith("town=\"")) {
-                            town = value;
-                        } else if (line.startsWith("name=\"")) {
-                            ownerName = value;
-                        } else if (line.startsWith("contacts=\"")) {
-                            contacts = value.split(", ");
-                        } else if (line.startsWith("description=\"")) {
-                            description = value;
-                        } else if (line.startsWith("freshDetected=\"")) {
-                            freshDetected = Boolean.valueOf(value);
-                        } else if (line.startsWith("date=\"")) {
-                            detectedDate = value;
-                        } else if (line.startsWith("images=\"")) {
-                            String[] sub = line.substring(9, line.length() - 2).split(", ");
-                            img = new int[sub.length];
-                            for (int i = 0; i < img.length; i++) {
-                                img[i] = Integer.parseInt(sub[i]);
-                            }
-                        } else if (line.startsWith("link=\"")) {
-                            link = value;
-                        }
-                    }
-                    Car car = new Car(id, brand, model, engine, region, link, price, change, buildYear, detectedDate, description, false, freshDetected);
-                    car.setTown(town);
-                    car.setImages(img);
-                    car.setContacts(contacts);
-                    car.setOwnerName(ownerName);
-                    report(car);
-                    base.put(id, car);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
