@@ -1,5 +1,7 @@
 package rst;
 
+import java.util.Set;
+
 public class Car implements Comparable<Car> {
     private int id;
     private String brand;
@@ -14,7 +16,7 @@ public class Car implements Comparable<Car> {
     private String detectedDate;
     private String description;
     private String[] contacts;
-    private int[] images;
+    private Set<Integer> images;
     private boolean isSoldOut;
     private boolean freshDetected;
     private boolean exchange;
@@ -130,11 +132,11 @@ public class Car implements Comparable<Car> {
         this.ownerName = ownerName;
     }
 
-    int[] getImages() {
+    Set<Integer> getImages() {
         return images;
     }
 
-    void setImages(int[] images) {
+    void setImages(Set<Integer> images) {
         this.images = images;
     }
 

@@ -50,12 +50,12 @@ public class Main {
         idPattern = compile("\\d{7,}\\.html$");
         pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
         buildYearPattern = compile("d-l-i-s\">\\d{4}");
-        descriptionPattern = compile("-d-d\">.+?</div>");
+        descriptionPattern = compile("-d-d\">.*?</div>");
         linkToCarPage = compile("oldcars/.+\\d+\\.html");
         carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
         regionPattern = compile("Область: <.+?</span>");
         bigDescription = compile("desc rst-uix-block-more\">.+?</div>");
-        townPattern = compile("\">\\D+?</a></span>Город<");
+        townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
         namePattern = compile("<strong>.+</strong>");
         telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
@@ -76,32 +76,37 @@ public class Main {
             }
         }
         System.out.println("from html");
-        try {
-            String html = HtmlGetter.getURLSource(startUrl + 1);
-            ArrayList<String> carsHtml = new ArrayList<>(10);
-            Matcher m = carHtmlBlock.matcher(html);
-            while (m.find()) {
-                carsHtml.add(m.group());
-            }
-            ImageGetter imageGetter = new ImageGetter();
-            for (String carHtml : carsHtml) {
-                Car car = getCarFromHtml(carHtml);
-                if (car != null) {
-                    int id = car.getId();
-                    if (!base.containsKey(id)) {
-                        createCarFolder(car);
-                        base.put(id, car);
-                        report(car);
-                        if (car.getImages() != null) {
-                            imageGetter.downloadAllImages(car);
+        for (int i = 1; i < 18; i++) {
+            try {
+                String html = HtmlGetter.getURLSource(startUrl + i);
+                ArrayList<String> carsHtml = new ArrayList<>(10);
+                Matcher m = carHtmlBlock.matcher(html);
+                while (m.find()) {
+                    carsHtml.add(m.group());
+                }
+                ImageGetter imageGetter = new ImageGetter();
+                for (String carHtml : carsHtml) {
+                    Car car = getCarFromHtml(carHtml);
+                    if (car != null) {
+                        int id = car.getId();
+                        if (!base.containsKey(id) && !car.isSoldOut()) {
+                            createCarFolder(car);
+                            base.put(id, car);
+                            report(car);
+                            if (car.getImages() != null) {
+                                imageGetter.downloadAllImages(car);
+                            }
+                        } else {
+                            Car carFromBase = base.get(id);
+                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
+                                imageGetter.downloadAbsentImages(carFromBase);
+                            }
                         }
-                    }else {
-                        Car carFromBase = base.get(id);
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         System.out.println(System.currentTimeMillis() - start);
     }
@@ -123,7 +128,7 @@ public class Main {
             }
             Matcher m2 = townPattern.matcher(carHtml);
             if (m2.find()) {
-                car.setTown(m2.group().substring(2, m2.group().length() - 17));
+                car.setTown(m2.group(2) == null ? m2.group(4) : m2.group(2)/*.substring(2, m2.group().length() - 17)*/);
             }
             Matcher m3 = contactsPattern.matcher(carHtml);
             if (m3.find()) {
@@ -149,11 +154,7 @@ public class Main {
             Matcher photo = photoPattrrn.matcher(carHtml);
             if (photo.find()) {
                 String[] src = photo.group().substring(14, photo.group().length() - 2).split(", ");
-                int[] dst = new int[src.length];
-                for (int i = 0; i < src.length; i++) {
-                    dst[i] = Integer.parseInt(src[i]);
-                }
-                car.setImages(dst);
+                car.setImages(getImageSet(src));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -239,15 +240,15 @@ public class Main {
         String[] folders = mainDir.list();
         if (folders != null) {
             nextFolder:
-            for (String s : folders) {
+            for (String folder : folders) {
                 Car car = new Car();
-                Matcher m = idFromFolder.matcher(s);
+                Matcher m = idFromFolder.matcher(folder);
                 if (m.find()) {
                     car.setId(Integer.parseInt(m.group()));
                 } else {
                     continue;
                 }
-                try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + s + "\\" + "data.txt")))) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + folder + "\\" + "data.txt")))) {
                     String line, prefix = "", value;
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
@@ -305,13 +306,8 @@ public class Main {
                                 if (value.equals("null")) {
                                     break;
                                 }
-                                int[] img;
                                 String[] sub = value.substring(1, value.length() - 1).split(", ");
-                                img = new int[sub.length];
-                                for (int i = 0; i < img.length; i++) {
-                                    img[i] = Integer.parseInt(sub[i]);
-                                    car.setImages(img);
-                                }
+                                car.setImages(getImageSet(sub));
                                 break;
                             case ("link"):
                                 car.setLink(value);
@@ -325,6 +321,14 @@ public class Main {
                 }
             }
         }
+    }
+
+    private Set<Integer> getImageSet(String[] input) {
+        Set<Integer> images = new LinkedHashSet<>();
+        for (String s : input) {
+            images.add(Integer.parseInt(s));
+        }
+        return images;
     }
 
     private static String getValue(String line) {
@@ -369,7 +373,7 @@ public class Main {
                 writer.newLine();
                 writer.write("date=\"" + car.getDetectedDate() + "\"");
                 writer.newLine();
-                writer.write("images=\"" + Arrays.toString(car.getImages()) + "\"");
+                writer.write("images=\"" + (car.getImages() == null ? "null" : Arrays.deepToString(car.getImages().toArray())) + "\"");
                 writer.newLine();
                 writer.write("link=\"" + car.getLink() + "\"");
                 writer.flush();

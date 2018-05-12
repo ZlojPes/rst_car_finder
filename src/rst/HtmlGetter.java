@@ -15,7 +15,7 @@ public class HtmlGetter {
 
     private static String toString(InputStream inputStream) {
         try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "Cp1251"))
-                /*;BufferedWriter writer = new BufferedWriter(new FileWriter(new File("d:\\htmlOut.html")))*/) {
+                /*;BufferedWriter writer = new BufferedWriter(new FileWriter(new File("d:\\htmlOutm.html")))*/) {
             String inputLine;
             StringBuilder stringBuilder = new StringBuilder();
             while ((inputLine = bufferedReader.readLine()) != null) {
@@ -32,7 +32,7 @@ public class HtmlGetter {
 
     public static void main(String[] args) {
         try {
-            getURLSource("http://m.rst.ua/oldcars/daewoo/sens/daewoo_sens_8250393.html");
+            getURLSource("http://m.rst.ua/oldcars/daewoo/sens/daewoo_sens_7306453.html");
         } catch (IOException e) {
             e.printStackTrace();
         }

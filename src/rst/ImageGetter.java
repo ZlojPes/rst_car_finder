@@ -29,7 +29,6 @@ public class ImageGetter {
                 fos.write(response);
                 fos.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 return false;
             }
         } else {
@@ -44,13 +43,17 @@ public class ImageGetter {
             new Thread(() -> {
                 String fullPath = path + i + ".jpg";
                 String url = "http://img.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
-                downloadImage(url, fullPath);
+                String secondUrl;
+                if(!downloadImage(url, fullPath)){
+                    secondUrl = "http://img1.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
+                    downloadImage(secondUrl, fullPath);
+                }
             }).start();
         }
     }
 
-    public boolean downloadAbsentImages(Car car) {
-        return true;
+    void downloadAbsentImages(Car car) {
+
     }
 
     public static void main(String[] args) {
