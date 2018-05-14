@@ -37,7 +37,8 @@ public class Car implements Comparable<Car> {
         this.engine = engine;
     }
 
-    Car(){}
+    Car() {
+    }
 
 
     int getPrice() {

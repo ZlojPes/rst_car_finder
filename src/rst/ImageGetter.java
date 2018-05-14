@@ -3,7 +3,6 @@ package rst;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.regex.Matcher;
 
 public class ImageGetter {
     private boolean downloadImage(String sourceUrl, String savePath) {
@@ -44,7 +43,7 @@ public class ImageGetter {
                 String fullPath = path + i + ".jpg";
                 String url = "http://img.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
                 String secondUrl;
-                if(!downloadImage(url, fullPath)){
+                if (!downloadImage(url, fullPath)) {
                     secondUrl = "http://img1.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
                     downloadImage(secondUrl, fullPath);
                 }

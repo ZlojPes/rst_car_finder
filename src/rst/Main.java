@@ -34,9 +34,12 @@ public class Main {
     private Pattern photoPattrrn;
     private Pattern idFromFolder;
     private Pattern enginePattern;
+    private Pattern allPagePattern;
+    private Pattern pagePattern;
 
-    // TODO логический ребилд первичной инициализации базы;
-    // TODO Pagination;
+    // TODO E-Mail notifier;
+    // TODO parsing/writing JSON data file;
+    // TODO hourly check car for update;
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -62,6 +65,8 @@ public class Main {
         photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?];");
         idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
+        allPagePattern = compile("<ul class=\"pagination\">.+?</a></li></ul>");
+        pagePattern = compile("(active)|(>\\d?\\d</a></li>)|(id=\"next-page\")");
     }
 
     private void go() {
@@ -76,9 +81,10 @@ public class Main {
             }
         }
         System.out.println("from html");
-        for (int i = 1; i < 18; i++) {
+        int pageNum = 1;
+        while (true) {
             try {
-                String html = HtmlGetter.getURLSource(startUrl + i);
+                String html = HtmlGetter.getURLSource(startUrl + pageNum);
                 ArrayList<String> carsHtml = new ArrayList<>(10);
                 Matcher m = carHtmlBlock.matcher(html);
                 while (m.find()) {
@@ -104,11 +110,24 @@ public class Main {
                         }
                     }
                 }
+                Matcher allPages = allPagePattern.matcher(html);
+                if (allPages.find()) {
+                    ArrayList<String> pageList = new ArrayList<>();
+                    Matcher page = pagePattern.matcher(allPages.group());
+                    while (page.find()) {
+                        pageList.add(page.group());
+                    }
+                    if (pageList.size() - pageList.indexOf("active") > 2) {
+                        pageNum++;
+                    } else {
+                        System.out.println("page " + pageNum + " is last, repeating");
+                        pageNum = 1;
+                    }
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        System.out.println(System.currentTimeMillis() - start);
     }
 
     private void report(Car car) {
