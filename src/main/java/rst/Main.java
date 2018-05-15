@@ -13,7 +13,7 @@ import static java.util.regex.Pattern.compile;
 public class Main {
     public static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
     private File mainDir = new File(MAIN_PATH);
-    private String startUrl = "http://main.java.rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2002&year[]=0&condition=1&engine[]=0&" +
+    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2002&year[]=0&condition=1&engine[]=0&" +
             "engine[]=0&fuel=0&gear=0&drive=0&results=1&saled=0&notcust=-1&sort=1&city=0&region[]=23&region[]=24&" +
             "region[2]=5&region[3]=8&region[4]=3&region[5]=2&model[]=142&model[]=146&model[2]=149&from=sform&start=";
     private Map<Integer, Car> base = new HashMap<>();
@@ -40,6 +40,7 @@ public class Main {
     // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
     // TODO hourly check car for update;
+    //rst_car_finder>java -cp ./target/classes rst.Main
 
     public static void main(String[] args) {
         Main main = new Main();
@@ -103,10 +104,10 @@ public class Main {
                                 imageGetter.downloadAllImages(car);
                             }
                         } else {
-                            Car carFromBase = base.get(id);
-                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
-                                imageGetter.downloadAbsentImages(carFromBase);
-                            }
+//                            Car carFromBase = base.get(id);
+//                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
+//                                imageGetter.downloadAbsentImages(carFromBase);
+//                            }
                         }
                     }
                 }
@@ -138,7 +139,7 @@ public class Main {
 
     private void addCarDetails(Car car) {
         try {
-            String carHtml = HtmlGetter.getURLSource("http://m.main.java.rst.ua/" + car.getLink());
+            String carHtml = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
             if (car.getDescription().equals("big")) {
                 Matcher m = bigDescription.matcher(carHtml);
                 if (m.find()) {
