@@ -20,10 +20,10 @@ public class DirectMail {
             props.setProperty("mail.debug", "true");
             Session session = Session.getInstance(props);
             MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress("XXXXXXXXXXXXXXXXXXXX@gmail.com"));
-            message.addRecipient(RecipientType.TO, new InternetAddress("XXXXXXXXXXXXXXXXXXXX@gmail.com"));
+            message.setFrom(new InternetAddress("asp4ever@gmail.com"));
+            message.addRecipient(RecipientType.TO, new InternetAddress("asp4rever@gmail.com"));
             message.setSubject("SMTP Test");
-            message.setText("Hi Jan");
+            message.setText("Последняя проверка времени доставки сообщения 17-12");
             Transport.send(message);
         } catch (Exception e) {
             e.printStackTrace();
