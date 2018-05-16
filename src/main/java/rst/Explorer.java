@@ -126,13 +126,13 @@ public class Explorer {
                         pageNum++;
                     } else {
                         System.out.print(firstCycle ? "page " + pageNum + " is last, repeating" : ".");
+                        firstCycle = false;
                         pageNum = 1;
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            firstCycle = false;
         }
     }
 
