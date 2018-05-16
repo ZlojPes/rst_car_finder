@@ -37,7 +37,7 @@ public class ImageGetter {
     }
 
     void downloadAllImages(Car car) {
-        String path = Main.MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel() + "\\";
+        String path = Explorer.MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel() + "\\";
         for (int i : car.getImages()) {
             new Thread(() -> {
                 String fullPath = path + i + ".jpg";

@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
 
-public class Main {
+public class Explorer {
     public static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
     private File mainDir = new File(MAIN_PATH);
     private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2002&year[]=0&condition=1&engine[]=0&" +
@@ -40,12 +40,12 @@ public class Main {
     // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
     // TODO hourly check car for update;
-    //rst_car_finder>java -cp ./target/classes rst.Main
+    //rst_car_finder>java -cp ./target/classes rst.Explorer
 
     public static void main(String[] args) {
-        Main main = new Main();
-        main.initPatterns();
-        main.go();
+        Explorer explorer = new Explorer();
+        explorer.initPatterns();
+        explorer.go();
     }
 
     private void initPatterns() {
@@ -73,7 +73,7 @@ public class Main {
     private void go() {
         long start = System.currentTimeMillis();
         if (mainDir.exists()) {
-            System.out.println("from file");
+            System.out.print("Reading base from disc");
             initBaseFromFile();
         } else {
             if (!mainDir.mkdir()) {
@@ -81,8 +81,9 @@ public class Main {
                 System.exit(1);
             }
         }
-        System.out.println("from html");
+        System.out.println("\nScanning html");
         int pageNum = 1;
+        boolean firstCycle = true;
         while (true) {
             try {
                 String html = HtmlGetter.getURLSource(startUrl + pageNum);
@@ -100,14 +101,17 @@ public class Main {
                             createCarFolder(car);
                             base.put(id, car);
                             report(car);
+                            if (!firstCycle){
+                                DirectMail.sendMessageByEmail(car);
+                            }
                             if (car.getImages() != null) {
                                 imageGetter.downloadAllImages(car);
                             }
                         } else {
-//                            Car carFromBase = base.get(id);
-//                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
-//                                imageGetter.downloadAbsentImages(carFromBase);
-//                            }
+                            Car carFromBase = base.get(id);
+                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
+                                imageGetter.downloadAbsentImages(carFromBase);
+                            }
                         }
                     }
                 }
@@ -121,13 +125,14 @@ public class Main {
                     if (pageList.size() - pageList.indexOf("active") > 2) {
                         pageNum++;
                     } else {
-                        System.out.println("page " + pageNum + " is last, repeating");
+                        System.out.print(firstCycle ? "page " + pageNum + " is last, repeating" : ".");
                         pageNum = 1;
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            firstCycle = false;
         }
     }
 
@@ -268,7 +273,7 @@ public class Main {
                 } else {
                     continue;
                 }
-                try (BufferedReader reader = new BufferedReader(new FileReader(new File(MAIN_PATH + "\\" + folder + "\\" + "data.txt")))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
                     String line, prefix = "", value;
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
@@ -334,7 +339,7 @@ public class Main {
                                 break;
                         }
                     }
-                    report(car);
+                    System.out.print(".");
                     base.put(car.getId(), car);
                 } catch (IOException e) {
                     e.printStackTrace();

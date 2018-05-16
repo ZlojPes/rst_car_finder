@@ -31,7 +31,7 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
+        <sourceDirectory>src/explorer/java</sourceDirectory>
         <outputDirectory>target/classes</outputDirectory>
         <finalName>RST Car Finder 1.0.1</finalName>
         <plugins>
@@ -53,7 +53,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>main.java.rst.Main</mainClass>
+                            <mainClass>explorer.java.rst.Explorer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -65,7 +65,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>main.java.rst.Main</mainClass>
+                            <mainClass>explorer.java.rst.Explorer</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
