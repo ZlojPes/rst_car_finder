@@ -16,11 +16,11 @@
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-gmail -->
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-gmail</artifactId>
-            <version>v1-rev86-1.23.0</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.google.apis</groupId>-->
+            <!--<artifactId>google-api-services-gmail</artifactId>-->
+            <!--<version>v1-rev86-1.23.0</version>-->
+        <!--</dependency>-->
         <!-- https://mvnrepository.com/artifact/javax.mail/mail -->
         <dependency>
             <groupId>javax.mail</groupId>
@@ -33,7 +33,7 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <outputDirectory>target/classes</outputDirectory>
-        <finalName>RST Car Finder 1.0.1</finalName>
+        <finalName>rst_1.0.1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -53,7 +53,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>explorer.java.rst.Explorer</mainClass>
+                            <mainClass>rst.Explorer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -65,7 +65,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>explorer.java.rst.Explorer</mainClass>
+                            <mainClass>rst.Explorer</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
