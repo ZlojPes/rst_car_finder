@@ -82,8 +82,10 @@ public class Explorer {
         System.out.println("\nScanning html");
         int pageNum = 1;
         int topId = 0, markerId = 0;
+        long startTime = 0;
         boolean firstCycle = true;
         while (true) {
+            startTime = System.currentTimeMillis();
             try {
                 String html = HtmlGetter.getURLSource(startUrl + pageNum);
                 ArrayList<String> carsHtml = new ArrayList<>(10);
@@ -101,6 +103,10 @@ public class Explorer {
                         }
                         if (markerId == id) {
                             markerId = topId;
+                            if (firstCycle) {
+                                System.out.print("\nPage " + (pageNum - 1) + " is last (" +
+                                        ((System.currentTimeMillis() - start) / 1000) + "s), repeating");
+                            }
                             pageNum = 1;
                             firstCycle = false;
                         }
@@ -126,12 +132,15 @@ public class Explorer {
                     }
                 }
                 pageNum++;
-                System.out.println("page " + pageNum);
-                if (!firstCycle) {
-                    Thread.sleep(10000);
+                System.out.print(".");
+                long delay = 10000 - (System.currentTimeMillis() - startTime);
+                if (!firstCycle && delay > 0) {
+                    Thread.sleep(delay);
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
+                DirectMail.sendMessageByEmail(e.getMessage());
+                System.exit(1);
             }
         }
     }
@@ -273,7 +282,8 @@ public class Explorer {
                 } else {
                     continue;
                 }
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
+                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
                     String line, prefix = "", value;
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {

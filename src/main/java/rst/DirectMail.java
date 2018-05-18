@@ -24,6 +24,18 @@ public class DirectMail {
         }
     }
 
+    public static void sendMessageByEmail(String message) {
+        System.out.println("Sending E-Mail...");
+        String subject = "Ошибка открытия URL!";
+        try {
+            sendEmail(subject, message);
+            System.out.println("Sent successful!");
+        } catch (MessagingException | NamingException e) {
+            System.out.println("E-Mail sending failed!");
+            e.printStackTrace();
+        }
+    }
+
     public synchronized static void sendEmail(String subject, String message) throws MessagingException, NamingException {
         String[] mx = getMX("gmail.com");
 //        for (String mxx : mx) {
