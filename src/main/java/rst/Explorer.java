@@ -34,8 +34,7 @@ public class Explorer {
     private Pattern photoPattrrn;
     private Pattern idFromFolder;
     private Pattern enginePattern;
-    private Pattern allPagePattern;
-    private Pattern pagePattern;
+    private Pattern freeAdPattern;
 
     // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
@@ -66,8 +65,7 @@ public class Explorer {
         photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?];");
         idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-        allPagePattern = compile("<ul class=\"pagination\">.+?</a></li></ul>");
-        pagePattern = compile("(active)|(>\\d?\\d</a></li>)|(id=\"next-page\")");
+        freeAdPattern = compile("бесплатное объявление</span>");
     }
 
     private void go() {
@@ -83,6 +81,7 @@ public class Explorer {
         }
         System.out.println("\nScanning html");
         int pageNum = 1;
+        int topId = 0, markerId = 0;
         boolean firstCycle = true;
         while (true) {
             try {
@@ -97,11 +96,22 @@ public class Explorer {
                     Car car = getCarFromHtml(carHtml);
                     if (car != null) {
                         int id = car.getId();
+                        if (carsHtml.indexOf(carHtml) == 0) {
+                            topId = id;
+                        }
+                        if (markerId == id) {
+                            markerId = topId;
+                            pageNum = 1;
+                            firstCycle = false;
+                        }
+                        if (markerId == 0) {
+                            markerId = topId;
+                        }
                         if (!base.containsKey(id) && !car.isSoldOut()) {
                             createCarFolder(car);
                             base.put(id, car);
                             report(car);
-                            if (!firstCycle){
+                            if (!firstCycle) {
                                 DirectMail.sendMessageByEmail(car);
                             }
                             if (car.getImages() != null) {
@@ -115,22 +125,12 @@ public class Explorer {
                         }
                     }
                 }
-                Matcher allPages = allPagePattern.matcher(html);
-                if (allPages.find()) {
-                    ArrayList<String> pageList = new ArrayList<>();
-                    Matcher page = pagePattern.matcher(allPages.group());
-                    while (page.find()) {
-                        pageList.add(page.group());
-                    }
-                    if (pageList.size() - pageList.indexOf("active") > 2) {
-                        pageNum++;
-                    } else {
-                        System.out.print(firstCycle ? "page " + pageNum + " is last, repeating" : ".");
-                        firstCycle = false;
-                        pageNum = 1;
-                    }
+                pageNum++;
+                System.out.println("page " + pageNum);
+                if (!firstCycle) {
+                    Thread.sleep(10000);
                 }
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -207,7 +207,7 @@ public class Explorer {
         if (carHtml.contains("Уже ПРОДАНО")) {
             isSoldOut = true;
         }
-        if (carHtml.contains("main.java.rst-ocb-i-s-fresh")) {
+        if (carHtml.contains("rst-ocb-i-s-fresh")) {
             freshDetected = true;
         }
         if (carHtml.contains("ocb-i-exchange")) {
