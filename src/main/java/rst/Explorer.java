@@ -13,7 +13,7 @@ import static java.util.regex.Pattern.compile;
 public class Explorer {
     public static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
     private File mainDir = new File(MAIN_PATH);
-    private String startUrl = "http://rst.ua/oldcars/daewoo/?year[]=2003&year[]=0&price[]=101&price[]=2600&photos=1&engine[]=0&engine[]=0&gear=0&fuel=0&drive=0&condition=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform&start=2";
+    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2003&year[]=0&condition=1&engine[]=0&engine[]=0&fuel=0&gear=0&drive=0&results=1&saled=0&notcust=&sort=1&city=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform&start=";
     private Map<Integer, Car> base = new HashMap<>();
     private Pattern prefixPattern;
     private Pattern idPattern;
