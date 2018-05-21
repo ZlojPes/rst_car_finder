@@ -32,7 +32,7 @@ public class HtmlGetter {
 
     public static void main(String[] args) {
         try {
-            getURLSource("http://m.main.java.rst.ua/oldcars/daewoo/sens/daewoo_sens_7306453.html");
+            getURLSource("http://m.rst.ua/oldcars/daewoo/sens/daewoo_sens_7306453.html");
         } catch (IOException e) {
             e.printStackTrace();
         }

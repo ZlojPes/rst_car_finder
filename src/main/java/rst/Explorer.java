@@ -13,9 +13,7 @@ import static java.util.regex.Pattern.compile;
 public class Explorer {
     public static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
     private File mainDir = new File(MAIN_PATH);
-    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2002&year[]=0&condition=1&engine[]=0&" +
-            "engine[]=0&fuel=0&gear=0&drive=0&results=1&saled=0&notcust=-1&sort=1&city=0&region[]=23&region[]=24&" +
-            "region[2]=5&region[3]=8&region[4]=3&region[5]=2&model[]=142&model[]=146&model[2]=149&from=sform&start=";
+    private String startUrl = "http://rst.ua/oldcars/daewoo/?year[]=2003&year[]=0&price[]=101&price[]=2600&photos=1&engine[]=0&engine[]=0&gear=0&fuel=0&drive=0&condition=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform&start=2";
     private Map<Integer, Car> base = new HashMap<>();
     private Pattern prefixPattern;
     private Pattern idPattern;
@@ -39,7 +37,6 @@ public class Explorer {
     // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
     // TODO hourly check car for update;
-    //rst_car_finder>java -cp ./target/classes rst.Explorer
 
     public static void main(String[] args) {
         Explorer explorer = new Explorer();
@@ -93,7 +90,6 @@ public class Explorer {
                 while (m.find()) {
                     carsHtml.add(m.group());
                 }
-                ImageGetter imageGetter = new ImageGetter();
                 for (String carHtml : carsHtml) {
                     Car car = getCarFromHtml(carHtml);
                     if (car != null) {
@@ -106,6 +102,8 @@ public class Explorer {
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
                                         ((System.currentTimeMillis() - start) / 1000) + "s), repeating");
+                            } else {
+                                System.out.print("/");
                             }
                             pageNum = 1;
                             firstCycle = false;
@@ -114,6 +112,8 @@ public class Explorer {
                             markerId = topId;
                         }
                         if (!base.containsKey(id) && !car.isSoldOut()) {
+                            ImageGetter imageGetter = new ImageGetter();
+                            addCarDetails(car);
                             createCarFolder(car);
                             base.put(id, car);
                             report(car);
@@ -123,24 +123,28 @@ public class Explorer {
                             if (car.getImages() != null) {
                                 imageGetter.downloadAllImages(car);
                             }
-                        } else {
-                            Car carFromBase = base.get(id);
-                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
-                                imageGetter.downloadAbsentImages(carFromBase);
-                            }
                         }
+//                        else {
+//                            Car carFromBase = base.get(id);
+//                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
+//                                imageGetter.downloadAbsentImages(carFromBase);
+//                            }
+//                      }
                     }
                 }
+                //               System.out.println("page " + pageNum + " ");
                 pageNum++;
                 System.out.print(".");
-                long delay = 10000 - (System.currentTimeMillis() - startTime);
-                if (!firstCycle && delay > 0) {
+                long delay = 5000 - (System.currentTimeMillis() - startTime);
+                if (delay > 0) {
                     Thread.sleep(delay);
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
                 DirectMail.sendMessageByEmail(e.getMessage());
-                System.exit(1);
+                if (e.getMessage().contains("403 for URL")) {
+                    System.exit(1);
+                }
             }
         }
     }
@@ -265,9 +269,7 @@ public class Explorer {
         if (m8.find()) {
             engine = m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3);
         }
-        Car car = new Car(id, brand, model, engine, region, link, price, exchange, buildYear, date, description, isSoldOut, freshDetected);
-        addCarDetails(car);
-        return car;
+        return new Car(id, brand, model, engine, region, link, price, exchange, buildYear, date, description, isSoldOut, freshDetected);
     }
 
     private void initBaseFromFile() {
