@@ -35,11 +35,11 @@ public class HtmlGetter {
         try {
             result = future.get(10, TimeUnit.SECONDS);
         } catch (TimeoutException ex) {
-            System.out.println("Timeout");
+            System.out.print("Timeout");
         } catch (InterruptedException e) {
-            System.out.println("InterruptedException");
+            System.out.print("InterruptedException");
         } catch (ExecutionException e) {
-            System.out.println("ExecutionException");
+            System.out.print("ExecutionException");
         } finally {
             future.cancel(true);
         }
