@@ -15,19 +15,11 @@
     </properties>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-gmail -->
-        <!--<dependency>-->
-        <!--<groupId>com.google.apis</groupId>-->
-        <!--<artifactId>google-api-services-gmail</artifactId>-->
-        <!--<version>v1-rev86-1.23.0</version>-->
-        <!--</dependency>-->
-        <!-- https://mvnrepository.com/artifact/javax.mail/mail -->
         <dependency>
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
             <version>1.4</version>
         </dependency>
-
     </dependencies>
 
     <build>

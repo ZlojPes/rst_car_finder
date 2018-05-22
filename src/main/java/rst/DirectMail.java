@@ -7,9 +7,9 @@ import javax.mail.internet.MimeMessage.RecipientType;
 import javax.naming.*;
 import javax.naming.directory.*;
 
-public class DirectMail {
-    public static void sendMessageByEmail(Car car) {
-        System.out.println("Sending E-Mail...");
+class DirectMail {
+    static void sendMessageByEmail(Car car) {
+        System.out.println("********************Sending E-Mail********************");
         String subject = "Обнаружено новое авто!";
         String message = "Марка: " + car.getBrand() + "\nМодель: " + car.getModel() + "\nЦена: " + car.getPrice() + "\nГод: " +
                 car.getBuildYear() + "Свежее:" + (car.freshDetected() ? "да" : "нет") + "\nДвигатель: " + car.getEngine() +
@@ -17,14 +17,14 @@ public class DirectMail {
                 "\nhttp://rst.ua/" + car.getLink();
         try {
             sendEmail(subject, message);
-            System.out.println("Sent successful!");
+            System.out.println("*******************Sent successful!*******************");
         } catch (MessagingException | NamingException e) {
             System.out.println("E-Mail sending failed!");
             e.printStackTrace();
         }
     }
 
-    public static void sendMessageByEmail(String message) {
+    static void sendMessageByEmail(String message) {
         System.out.println("Sending E-Mail...");
         String subject = "Ошибка открытия URL!";
         try {
@@ -36,7 +36,7 @@ public class DirectMail {
         }
     }
 
-    public synchronized static void sendEmail(String subject, String message) throws MessagingException, NamingException {
+    private synchronized static void sendEmail(String subject, String message) throws MessagingException, NamingException {
         String[] mx = getMX("gmail.com");
 //        for (String mxx : mx) {
 //            System.out.println("MX: " + mxx);

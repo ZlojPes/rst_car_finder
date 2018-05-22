@@ -10,9 +10,10 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
 
-public class Explorer { static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
+public class Explorer {
+    static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
     private File mainDir = new File(MAIN_PATH);
-    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2003&year[]=0&condition=1&engine[]=0&engine[]=0&fuel=0&gear=0&drive=0&results=4&saled=0&notcust=&sort=1&city=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform&start=";
+    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2003&year[]=0&condition=1&engine[]=0&engine[]=0&fuel=0&gear=0&drive=0&results=4&saled=0&notcust=&sort=1&city=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform";
     private Map<Integer, Car> base = new HashMap<>();
     private Pattern prefixPattern;
     private Pattern idPattern;
@@ -83,7 +84,7 @@ public class Explorer { static final String MAIN_PATH = new JFileChooser().getFi
         while (true) {
             startTime = System.currentTimeMillis();
             try {
-                String html = HtmlGetter.getURLSource(startUrl + pageNum);
+                String html = HtmlGetter.getURLSource(startUrl + "&start=" + pageNum);
                 ArrayList<String> carsHtml = new ArrayList<>(40);
                 Matcher m = carHtmlBlock.matcher(html);
                 while (m.find()) {
