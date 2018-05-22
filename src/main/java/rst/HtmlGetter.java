@@ -6,6 +6,7 @@ import java.net.URLConnection;
 
 public class HtmlGetter {
     static String getURLSource(String url) throws IOException {
+        System.out.println("start htmlGetter");
         URL urlObject = new URL(url);
         URLConnection urlConnection = urlObject.openConnection();
         urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36");
@@ -23,6 +24,8 @@ public class HtmlGetter {
 //                writer.write(inputLine);
 //                writer.newLine();
             }
+
+            System.out.println("end while() toString");
             return stringBuilder.toString();
         } catch (IOException e) {
             e.printStackTrace();
