@@ -31,7 +31,7 @@ public class HtmlGetter {
             return stringBuilder.toString();
         };
         Future<String> future = executor.submit(task);
-        String result = "Connection failed";
+        String result = "Connection failed!";
         try {
             result = future.get(10, TimeUnit.SECONDS);
         } catch (TimeoutException ex) {
