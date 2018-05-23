@@ -118,7 +118,7 @@ public class Explorer {
                             base.put(id, car);
                             report(car);
                             if (!firstCycle) {
-                                DirectMail.sendMessageByEmail(car);
+                                Mail.sendCar(car);
                             }
                             if (car.getImages() != null) {
                                 imageGetter.downloadAllImages(car);
@@ -140,8 +140,8 @@ public class Explorer {
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
-                DirectMail.sendMessageByEmail(e.getMessage());
                 if (e.getMessage().contains("403 for URL")) {
+                    Mail.alarmByEmail("Ahtung!!!", "Всё пропало!\n403 FORBIDDEN!");
                     System.exit(1);
                 }
             }
