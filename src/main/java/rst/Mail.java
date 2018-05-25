@@ -16,11 +16,18 @@ public class Mail {
         if (subject == null) {
             subject = "Обнаружено новое авто!";
         }
-        String body = "Марка: " + car.getBrand() + "\nМодель: " + car.getModel() + "\nЦена: " + car.getPrice() + "$\nГод: " +
-                car.getBuildYear() + "\nСвежее: " + (car.isFreshDetected() ? "да" : "нет") + "\nДвигатель: " + car.getEngine() +
-                "\nРегион: " + car.getRegion() + "\nГород: " + car.getTown() + "\nОбмен: " + (car.isExchange() ? "да" : "нет") +
-                "\nописание: " + car.getDescription() + "\nhttp://rst.ua/" + car.getLink() + (message != null ? "\n" + message : "");
-        alarmByEmail(subject, body);
+        StringBuilder body = new StringBuilder().append("Марка: ").append(car.getBrand()).append("\nМодель: ").append(car.getModel())
+                .append("\nЦена: ").append(car.getPrice()).append("$\nГод: ").append(car.getBuildYear()).append("\nСвежее: ")
+                .append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ")
+                .append(car.getRegion()).append("\nГород: ").append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет")
+                .append("\nописание: ").append(car.getDescription()).append("\nИмя:").append(car.getOwnerName())
+                .append(" - ").append(car.getContacts() != null?car.getContacts()[0]:"").append("\nhttp://rst.ua/")
+                .append(car.getLink()).append("\nКомментарии:");
+        for (String comment : car.getComments()) {
+            body.append("\n").append(comment);
+        }
+        body.append("\n").append(message);
+        alarmByEmail(subject, body.toString());
     }
 
     static void alarmByEmail(String subject, String message) {

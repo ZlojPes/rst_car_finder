@@ -1,7 +1,5 @@
 package rst;
 
-import sun.plugin2.message.Message;
-
 import javax.swing.*;
 import java.io.*;
 import java.text.DateFormat;
@@ -74,7 +72,7 @@ public class Explorer {
         long start = System.currentTimeMillis();
         if (mainDir.exists()) {
             System.out.print("Reading base from disc");
-            initBaseFromFile();
+            initBaseFromDisc();
         } else {
             if (!mainDir.mkdir()) {
                 System.out.println("Error happens during creating work directory!");
@@ -131,7 +129,7 @@ public class Explorer {
                                 }
                             } //else ignore this car
                         } else {
-                                checkCarForUpdates(car, !firstCycle);
+                            checkCarForUpdates(car, !firstCycle);
 
 //                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
 //                                imageGetter.downloadAbsentImages(carFromBase);
@@ -166,24 +164,27 @@ public class Explorer {
             oldCar.setPrice(car.getPrice());
             System.out.print(comment);
         }
-        if (!car.getDescription().equals("big") && !car.getDescription().equals(oldCar.getDescription())) {
+        String desc = car.getDescription(), oldDesc = oldCar.getDescription();
+        if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("")) {
             hasChanges = true;
-            String comment = "Старый комментарий: " + oldCar.getDescription() + CalendarHelper.getTimeStamp();
+            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarHelper.getTimeStamp();
             oldCar.getComments().add(comment);
             oldCar.setDescription(car.getDescription());
-            System.out.print("описание обновлено");
+            System.out.println("описание обновлено");
         }
         if (car.isSoldOut()) {
             hasChanges = true;
             oldCar.setSoldOut(true);
             base.remove(oldCar.getId());
-            String comment = "Автомобиль продан! Время продажи: " + CalendarHelper.getTimeStamp();
+            String comment = "Автомобиль продан! Время отметки: " + CalendarHelper.getTimeStamp();
             oldCar.getComments().add(comment);
-            System.out.print("\nАвтомобиль продан!:" + car.getId());
+            System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
         }
-        if (hasChanges){
+        if (hasChanges) {
             writeCarOnDisc(oldCar, false);
-            Mail.sendCar("Изменения в авто!",oldCar, "см. изменения в комментариях");
+            if (sendEmail) {
+                Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
+            }
         }
     }
 
@@ -195,6 +196,7 @@ public class Explorer {
 
     private void addCarDetails(Car car) {
         try {
+            System.out.println(car.getId());
             String carHtml = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
             if (car.getDescription().equals("big")) {
                 Matcher m = bigDescription.matcher(carHtml);
@@ -243,6 +245,7 @@ public class Explorer {
         Matcher m = linkToCarPage.matcher(carHtml);
         if (m.find()) {
             link = m.group();
+            car.setLink(link);
             String[] name = link.split("/");
             car.setBrand(name[1]);
             car.setModel(name[2]);
@@ -302,11 +305,10 @@ public class Explorer {
         if (m9.find()) {
             car.setCondition(m9.group(1));
         }
-        report(car);
         return car;
     }
 
-    private void initBaseFromFile() {
+    private void initBaseFromDisc() {
         String[] folders = mainDir.list();
         if (folders != null) {
             nextFolder:
@@ -369,6 +371,7 @@ public class Explorer {
                                 break;
                             case ("description"):
                                 car.setDescription(value);
+//                                System.out.println(value);
                                 break;
                             case ("isFreshDetected"):
                                 car.setFreshDetected(Boolean.valueOf(value));
@@ -391,6 +394,8 @@ public class Explorer {
                                 break;
                         }
                     }
+                    if(car.getId() == 8374407)
+                        System.out.println("desc:"+car.getOwnerName());
                     System.out.print(".");
                     base.put(car.getId(), car);
                 } catch (IOException e) {
@@ -422,7 +427,7 @@ public class Explorer {
         String path = MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
         if (!createFolder || new File(path).mkdir()) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(path + "\\data.txt")))) {
-                writer.write("isSoldOut=\"" + car.isSoldOut());
+                writer.write("isSoldOut=\"" + car.isSoldOut() + "\"");
                 writer.newLine();
                 writer.write("brand=\"" + car.getBrand() + "\"");
                 writer.newLine();
@@ -469,7 +474,7 @@ public class Explorer {
 
     private static class CalendarHelper {
         private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-        private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy hh-mm-ss");
+        private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 
         private static Date yesterday() {
             final Calendar cal = Calendar.getInstance();
