@@ -1,5 +1,7 @@
 package rst;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 public class Car implements Comparable<Car> {
@@ -20,24 +22,11 @@ public class Car implements Comparable<Car> {
     private boolean isSoldOut;
     private boolean freshDetected;
     private boolean exchange;
+    private String condition;
+    private List<String> comments;
 
-    Car(int id, String brand, String model, String engine, String region, String link, int price, boolean exchange, int buildYear, String detectedDate, String description, boolean isSoldOut, boolean freshDetected) {
-        this.id = id;
-        this.brand = brand;
-        this.model = model;
-        this.region = region;
-        this.link = link;
-        this.price = price;
-        this.buildYear = buildYear;
-        this.detectedDate = detectedDate;
-        this.description = description;
-        this.isSoldOut = isSoldOut;
-        this.freshDetected = freshDetected;
-        this.exchange = exchange;
-        this.engine = engine;
-    }
-
-    Car() {
+    Car(){
+        comments = new LinkedList<>();
     }
 
 
@@ -45,63 +34,79 @@ public class Car implements Comparable<Car> {
         return price;
     }
 
-    public void setPrice(int price) {
+    void setPrice(int price) {
         this.price = price;
+    }
+
+    String getCondition() {
+        return condition;
+    }
+
+    void setCondition(String condition) {
+        this.condition = condition;
     }
 
     int getBuildYear() {
         return buildYear;
     }
 
-    public void setId(int id) {
+    void setId(int id) {
         this.id = id;
     }
 
-    public void setBrand(String brand) {
+    void setBrand(String brand) {
         this.brand = brand;
     }
 
-    public void setModel(String model) {
+    void setModel(String model) {
         this.model = model;
     }
 
-    public void setLink(String link) {
+    void setLink(String link) {
         this.link = link;
     }
 
-    public void setRegion(String region) {
+    void setRegion(String region) {
         this.region = region;
     }
 
-    public void setEngine(String engine) {
+    void setEngine(String engine) {
         this.engine = engine;
     }
 
-    public void setBuildYear(int buildYear) {
+    void setBuildYear(int buildYear) {
         this.buildYear = buildYear;
     }
 
-    public void setDetectedDate(String detectedDate) {
+    void setDetectedDate(String detectedDate) {
         this.detectedDate = detectedDate;
     }
 
-    public void setFreshDetected(boolean freshDetected) {
+    void setFreshDetected(boolean freshDetected) {
         this.freshDetected = freshDetected;
     }
 
-    public void setExchange(boolean exchange) {
+    void setExchange(boolean exchange) {
         this.exchange = exchange;
+    }
+
+    List<String> getComments() {
+        return comments;
+    }
+
+    void setComments(List<String> comments) {
+        this.comments = comments;
     }
 
     int getId() {
         return id;
     }
 
-    public String getEngine() {
+    String getEngine() {
         return engine;
     }
 
-    public boolean isExchange() {
+    boolean isExchange() {
         return exchange;
     }
 
@@ -169,14 +174,13 @@ public class Car implements Comparable<Car> {
         return isSoldOut;
     }
 
-    public void setSoldOut(boolean soldOut) {
+    void setSoldOut(boolean soldOut) {
         isSoldOut = soldOut;
     }
 
-    boolean freshDetected() {
+    boolean isFreshDetected() {
         return freshDetected;
     }
-
 
     @Override
     public int compareTo(Car o) {

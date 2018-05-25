@@ -9,12 +9,18 @@ import javax.mail.internet.MimeMessage;
 
 public class Mail {
     static void sendCar(Car car) {
-        String subject = "Обнаружено новое авто!";
-        String message = "Марка: " + car.getBrand() + "\nМодель: " + car.getModel() + "\nЦена: " + car.getPrice() + "$\nГод: " +
-                car.getBuildYear() + "\nСвежее: " + (car.freshDetected() ? "да" : "нет") + "\nДвигатель: " + car.getEngine() +
-                "\nРегион: " + car.getRegion() + "\nГород: " + car.getTown() + "\nОбмен: " + car.isExchange() +
-                "\nописание: " + car.getDescription() + "\nhttp://rst.ua/" + car.getLink();
-        alarmByEmail(subject, message);
+        sendCar(null, car, null);
+    }
+
+    static void sendCar(String subject, Car car, String message) {
+        if (subject == null) {
+            subject = "Обнаружено новое авто!";
+        }
+        String body = "Марка: " + car.getBrand() + "\nМодель: " + car.getModel() + "\nЦена: " + car.getPrice() + "$\nГод: " +
+                car.getBuildYear() + "\nСвежее: " + (car.isFreshDetected() ? "да" : "нет") + "\nДвигатель: " + car.getEngine() +
+                "\nРегион: " + car.getRegion() + "\nГород: " + car.getTown() + "\nОбмен: " + (car.isExchange() ? "да" : "нет") +
+                "\nописание: " + car.getDescription() + "\nhttp://rst.ua/" + car.getLink() + (message != null ? "\n" + message : "");
+        alarmByEmail(subject, body);
     }
 
     static void alarmByEmail(String subject, String message) {

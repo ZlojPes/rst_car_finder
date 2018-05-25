@@ -1,5 +1,7 @@
 package rst;
 
+import sun.plugin2.message.Message;
+
 import javax.swing.*;
 import java.io.*;
 import java.text.DateFormat;
@@ -32,7 +34,8 @@ public class Explorer {
     private Pattern photoPattrrn;
     private Pattern idFromFolder;
     private Pattern enginePattern;
-    private Pattern freeAdPattern;
+    private Pattern conditionPattern;
+    private Pattern mainPhotoPattern;
 
     // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
@@ -46,14 +49,14 @@ public class Explorer {
 
     private void initPatterns() {
         prefixPattern = Pattern.compile("^\\D{4,13}=");
-        datePattern = compile("(размещено|обновлено).+?</div>");
+        datePattern = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
         idPattern = compile("\\d{7,}\\.html$");
         pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
-        buildYearPattern = compile("d-l-i-s\">\\d{4}");
-        descriptionPattern = compile("-d-d\">.*?</div>");
+        buildYearPattern = compile("d-l-i-s\">(\\d{4})");
+        descriptionPattern = compile("-d-d\">(.*?)</div>");
         linkToCarPage = compile("oldcars/.+\\d+\\.html");
         carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
-        regionPattern = compile("Область: <.+?</span>");
+        regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
         bigDescription = compile("desc rst-uix-block-more\">.+?</div>");
         townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
@@ -62,7 +65,9 @@ public class Explorer {
         photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?];");
         idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-        freeAdPattern = compile("бесплатное объявление</span>");
+        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
+        conditionPattern = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
+
     }
 
     private void go() {
@@ -111,25 +116,27 @@ public class Explorer {
                         if (markerId == 0) {
                             markerId = topId;
                         }
-                        if (!base.containsKey(id) && !car.isSoldOut()) {
-                            ImageGetter imageGetter = new ImageGetter();
-                            addCarDetails(car);
-                            createCarFolder(car);
-                            base.put(id, car);
-                            report(car);
-                            if (!firstCycle) {
-                                Mail.sendCar(car);
-                            }
-                            if (car.getImages() != null) {
-                                imageGetter.downloadAllImages(car);
-                            }
-                        }
-//                        else {
-//                            Car carFromBase = base.get(id);
+                        if (!base.containsKey(id)) {
+                            if (!car.isSoldOut()) { //Add car to base
+                                ImageGetter imageGetter = new ImageGetter();
+                                addCarDetails(car);
+                                writeCarOnDisc(car, true);
+                                base.put(id, car);
+                                report(car);
+                                if (!firstCycle) {
+                                    Mail.sendCar(car);
+                                }
+                                if (car.getImages() != null) {
+                                    imageGetter.downloadAllImages(car);
+                                }
+                            } //else ignore this car
+                        } else {
+                                checkCarForUpdates(car, !firstCycle);
+
 //                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
 //                                imageGetter.downloadAbsentImages(carFromBase);
 //                            }
-//                      }
+                        }
                     }
                 }
                 pageNum++;
@@ -139,8 +146,9 @@ public class Explorer {
                     Thread.sleep(delay);
                 }
             } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-                if (e.getMessage().contains("403 for URL")) {
+                String err = e.getMessage();
+                System.out.print(err);
+                if (err.contains("403 for URL")) {
                     Mail.alarmByEmail("Ahtung!!!", "Всё пропало!\n403 FORBIDDEN!");
                     System.exit(1);
                 }
@@ -148,10 +156,41 @@ public class Explorer {
         }
     }
 
+    private void checkCarForUpdates(Car car, boolean sendEmail) {
+        Car oldCar = base.get(car.getId());
+        boolean hasChanges = false;
+        if (oldCar.getPrice() != car.getPrice()) {
+            hasChanges = true;
+            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            oldCar.setPrice(car.getPrice());
+            System.out.print(comment);
+        }
+        if (!car.getDescription().equals("big") && !car.getDescription().equals(oldCar.getDescription())) {
+            hasChanges = true;
+            String comment = "Старый комментарий: " + oldCar.getDescription() + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            oldCar.setDescription(car.getDescription());
+            System.out.print("описание обновлено");
+        }
+        if (car.isSoldOut()) {
+            hasChanges = true;
+            oldCar.setSoldOut(true);
+            base.remove(oldCar.getId());
+            String comment = "Автомобиль продан! Время продажи: " + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            System.out.print("\nАвтомобиль продан!:" + car.getId());
+        }
+        if (hasChanges){
+            writeCarOnDisc(oldCar, false);
+            Mail.sendCar("Изменения в авто!",oldCar, "см. изменения в комментариях");
+        }
+    }
+
     private void report(Car car) {
-        System.out.printf("%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %s%n",
-                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.freshDetected(), car.getPrice(),
-                car.getBuildYear(), car.getDetectedDate(), car.getDescription());
+        System.out.printf("%n%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %-26s%s%n",
+                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(), car.getPrice(),
+                car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
     }
 
     private void addCarDetails(Car car) {
@@ -199,32 +238,25 @@ public class Explorer {
     }
 
     private Car getCarFromHtml(String carHtml) {
-        String date = null, link, brand, model, description = null, region = null, engine = null;
-        int price = -1, id = -1, buildYear = -1;
-        boolean isSoldOut = false, freshDetected = false, exchange = false;
+        Car car = new Car();
+        String link;
         Matcher m = linkToCarPage.matcher(carHtml);
         if (m.find()) {
             link = m.group();
             String[] name = link.split("/");
-            brand = name[1];
-            model = name[2];
+            car.setBrand(name[1]);
+            car.setModel(name[2]);
         } else {
             return null;
         }
         Matcher m2 = idPattern.matcher(link);
         if (m2.find()) {
             String ids = m2.group();
-            id = Integer.parseInt(ids.substring(0, ids.length() - 5));
+            car.setId(Integer.parseInt(ids.substring(0, ids.length() - 5)));
         }
-        if (carHtml.contains("Уже ПРОДАНО")) {
-            isSoldOut = true;
-        }
-        if (carHtml.contains("rst-ocb-i-s-fresh")) {
-            freshDetected = true;
-        }
-        if (carHtml.contains("ocb-i-exchange")) {
-            exchange = true;
-        }
+        car.setSoldOut(carHtml.contains("Уже ПРОДАНО"));
+        car.setFreshDetected(carHtml.contains("rst-ocb-i-s-fresh"));
+        car.setExchange(carHtml.contains("ocb-i-exchange"));
         Matcher m3 = pricePattern.matcher(carHtml);
         if (m3.find()) {
             char[] priceArray = m3.group().substring(13, m3.group().length() - 7).toCharArray();
@@ -234,41 +266,44 @@ public class Explorer {
                     sb.append(c);
                 }
             }
-            price = Integer.parseInt(sb.toString());
+            car.setPrice(Integer.parseInt(sb.toString()));
         }
         Matcher m4 = buildYearPattern.matcher(carHtml);
         if (m4.find()) {
-            buildYear = Integer.parseInt(m4.group().substring(9, 13));
+            car.setBuildYear(Integer.parseInt(m4.group(1)));
         }
         Matcher m5 = descriptionPattern.matcher(carHtml);
         if (m5.find()) {
-            String desc = m5.group();
-            if (desc.length() < 132) {
-                description = desc.substring(6, desc.length() - 6);
-            } else {
-                description = "big";
+            String desc = m5.group(1);
+            if (desc.length() == 120) {
+                desc = "big";
             }
+            car.setDescription(desc);
         }
         Matcher m6 = datePattern.matcher(carHtml);
         if (m6.find()) {
-            String dateStr = m6.group();
-            if (dateStr.contains("сегодня")) {
-                date = CalendarHelper.getTodayDateString() + dateStr.substring(36, 42);
-            } else if (dateStr.contains("вчера")) {
-                date = CalendarHelper.getYesterdayDateString() + dateStr.substring(34, 40);
+            if (m6.group().contains("сегодня")) {
+                car.setDetectedDate(CalendarHelper.getTodayDateString() + " " + m6.group(1));
+            } else if (m6.group().contains("вчера")) {
+                car.setDetectedDate(CalendarHelper.getYesterdayDateString() + " " + m6.group(1));
             } else {
-                date = dateStr.substring(10, 20) + " 00:00";
+                car.setDetectedDate(m6.group(1) + " 00:00");
             }
         }
         Matcher m7 = regionPattern.matcher(carHtml);
         if (m7.find()) {
-            region = m7.group().substring(41, m7.group().length() - 7);
+            car.setRegion(m7.group(1));
         }
         Matcher m8 = enginePattern.matcher(carHtml);
         if (m8.find()) {
-            engine = m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3);
+            car.setEngine(m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3));
         }
-        return new Car(id, brand, model, engine, region, link, price, exchange, buildYear, date, description, isSoldOut, freshDetected);
+        Matcher m9 = conditionPattern.matcher(carHtml);
+        if (m9.find()) {
+            car.setCondition(m9.group(1));
+        }
+        report(car);
+        return car;
     }
 
     private void initBaseFromFile() {
@@ -284,7 +319,7 @@ public class Explorer {
                     continue;
                 }
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
+                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "Cp1251"))) {
                     String line, prefix = "", value;
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
@@ -304,6 +339,9 @@ public class Explorer {
                                 break;
                             case ("model"):
                                 car.setModel(value);
+                                break;
+                            case ("condition"):
+                                car.setCondition(value);
                                 break;
                             case ("engine"):
                                 car.setEngine(value);
@@ -326,13 +364,13 @@ public class Explorer {
                             case ("name"):
                                 car.setOwnerName(value);
                                 break;
-                            case ("contact"):
+                            case ("contacts"):
                                 car.setContacts(value.split(", "));
                                 break;
                             case ("description"):
                                 car.setDescription(value);
                                 break;
-                            case ("freshDetected"):
+                            case ("isFreshDetected"):
                                 car.setFreshDetected(Boolean.valueOf(value));
                                 break;
                             case ("date"):
@@ -347,6 +385,9 @@ public class Explorer {
                                 break;
                             case ("link"):
                                 car.setLink(value);
+                                break;
+                            case ("comment"):
+                                car.getComments().add(value);
                                 break;
                         }
                     }
@@ -377,15 +418,17 @@ public class Explorer {
         return null;
     }
 
-    private void createCarFolder(Car car) {
+    private void writeCarOnDisc(Car car, boolean createFolder) {
         String path = MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
-        if (new File(path).mkdir()) {
+        if (!createFolder || new File(path).mkdir()) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(path + "\\data.txt")))) {
-                writer.write("isSoldOut=\"false\"");
+                writer.write("isSoldOut=\"" + car.isSoldOut());
                 writer.newLine();
                 writer.write("brand=\"" + car.getBrand() + "\"");
                 writer.newLine();
                 writer.write("model=\"" + car.getModel() + "\"");
+                writer.newLine();
+                writer.write("condition=\"" + car.getCondition() + "\"");
                 writer.newLine();
                 writer.write("engine=\"" + car.getEngine() + "\"");
                 writer.newLine();
@@ -405,13 +448,18 @@ public class Explorer {
                 writer.newLine();
                 writer.write("description=\"" + car.getDescription() + "\"");
                 writer.newLine();
-                writer.write("freshDetected=\"" + car.freshDetected() + "\"");
+                writer.write("isFreshDetected=\"" + car.isFreshDetected() + "\"");
                 writer.newLine();
                 writer.write("date=\"" + car.getDetectedDate() + "\"");
                 writer.newLine();
                 writer.write("images=\"" + (car.getImages() == null ? "null" : Arrays.deepToString(car.getImages().toArray())) + "\"");
                 writer.newLine();
                 writer.write("link=\"" + car.getLink() + "\"");
+                for (String comment : car.getComments()) {
+                    writer.newLine();
+                    writer.write("comment=\"" + comment + "\"");
+
+                }
                 writer.flush();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -421,6 +469,7 @@ public class Explorer {
 
     private static class CalendarHelper {
         private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+        private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy hh-mm-ss");
 
         private static Date yesterday() {
             final Calendar cal = Calendar.getInstance();
@@ -434,6 +483,10 @@ public class Explorer {
 
         private static String getTodayDateString() {
             return dateFormat.format(new Date());
+        }
+
+        private static String getTimeStamp() {
+            return fullDateFormat.format(new Date());
         }
     }
 }
