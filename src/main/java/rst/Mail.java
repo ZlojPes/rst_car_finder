@@ -54,7 +54,6 @@ public class Mail {
         Session session = Session.getDefaultInstance(props, auth);
         System.out.println("Session created");
         sendEmail(session, toEmail, subject, message);
-
     }
 
     private static void sendEmail(Session session, String toEmail, String subject, String body) {

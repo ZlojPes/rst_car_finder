@@ -25,7 +25,7 @@ public class Car implements Comparable<Car> {
     private String condition;
     private List<String> comments;
 
-    Car(){
+    Car() {
         comments = new LinkedList<>();
     }
 
@@ -92,10 +92,6 @@ public class Car implements Comparable<Car> {
 
     List<String> getComments() {
         return comments;
-    }
-
-    void setComments(List<String> comments) {
-        this.comments = comments;
     }
 
     int getId() {

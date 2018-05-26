@@ -29,15 +29,14 @@ public class Explorer {
     private Pattern contactsPattern;
     private Pattern namePattern;
     private Pattern telPattern;
-    private Pattern photoPattrrn;
+    private Pattern photoPattern;
     private Pattern idFromFolder;
     private Pattern enginePattern;
     private Pattern conditionPattern;
     private Pattern mainPhotoPattern;
 
-    // TODO E-Mail notifier;
     // TODO parsing/writing JSON data file;
-    // TODO hourly check car for update;
+    // TODO regular check car for update;
 
     public static void main(String[] args) {
         Explorer explorer = new Explorer();
@@ -46,7 +45,7 @@ public class Explorer {
     }
 
     private void initPatterns() {
-        prefixPattern = Pattern.compile("^\\D{4,13}=");
+        prefixPattern = Pattern.compile("^\\D{4,15}=");
         datePattern = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
         idPattern = compile("\\d{7,}\\.html$");
         pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
@@ -60,7 +59,7 @@ public class Explorer {
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
         namePattern = compile("<strong>.+</strong>");
         telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
-        photoPattrrn = compile("var photos = \\[(\\d\\d?(, )?)+?];");
+        photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
         idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
         mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
@@ -73,6 +72,8 @@ public class Explorer {
         if (mainDir.exists()) {
             System.out.print("Reading base from disc");
             initBaseFromDisc();
+            deepCheck();
+//            System.exit(0);
         } else {
             if (!mainDir.mkdir()) {
                 System.out.println("Error happens during creating work directory!");
@@ -125,15 +126,11 @@ public class Explorer {
                                     Mail.sendCar(car);
                                 }
                                 if (car.getImages() != null) {
-                                    imageGetter.downloadAllImages(car);
+                                    imageGetter.downloadImages(car, null);
                                 }
                             } //else ignore this car
                         } else {
                             checkCarForUpdates(car, !firstCycle);
-
-//                            if (car.getImages() != null && (carFromBase == null || !carFromBase.getImages().containsAll(car.getImages()))) {
-//                                imageGetter.downloadAbsentImages(carFromBase);
-//                            }
                         }
                     }
                 }
@@ -154,49 +151,8 @@ public class Explorer {
         }
     }
 
-    private void checkCarForUpdates(Car car, boolean sendEmail) {
-        Car oldCar = base.get(car.getId());
-        boolean hasChanges = false;
-        if (oldCar.getPrice() != car.getPrice()) {
-            hasChanges = true;
-            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarHelper.getTimeStamp();
-            oldCar.getComments().add(comment);
-            oldCar.setPrice(car.getPrice());
-            System.out.print(comment);
-        }
-        String desc = car.getDescription(), oldDesc = oldCar.getDescription();
-        if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("")) {
-            hasChanges = true;
-            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarHelper.getTimeStamp();
-            oldCar.getComments().add(comment);
-            oldCar.setDescription(car.getDescription());
-            System.out.println("описание обновлено");
-        }
-        if (car.isSoldOut()) {
-            hasChanges = true;
-            oldCar.setSoldOut(true);
-            base.remove(oldCar.getId());
-            String comment = "Автомобиль продан! Время отметки: " + CalendarHelper.getTimeStamp();
-            oldCar.getComments().add(comment);
-            System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
-        }
-        if (hasChanges) {
-            writeCarOnDisc(oldCar, false);
-            if (sendEmail) {
-                Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
-            }
-        }
-    }
-
-    private void report(Car car) {
-        System.out.printf("%n%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %-26s%s%n",
-                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(), car.getPrice(),
-                car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
-    }
-
     private void addCarDetails(Car car) {
         try {
-            System.out.println(car.getId());
             String carHtml = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
             if (car.getDescription().equals("big")) {
                 Matcher m = bigDescription.matcher(carHtml);
@@ -229,9 +185,9 @@ public class Explorer {
                 }
                 car.setContacts(phones);
             }
-            Matcher photo = photoPattrrn.matcher(carHtml);
+            Matcher photo = photoPattern.matcher(carHtml);
             if (photo.find()) {
-                String[] src = photo.group().substring(14, photo.group().length() - 2).split(", ");
+                String[] src = photo.group(1).split(", ");
                 car.setImages(getImageSet(src));
             }
         } catch (IOException e) {
@@ -308,6 +264,81 @@ public class Explorer {
         return car;
     }
 
+    private void checkCarForUpdates(Car car, boolean sendEmail) {
+        Car oldCar = base.get(car.getId());
+        boolean hasChanges = false;
+
+        if (oldCar.getPrice() != car.getPrice()) {
+            hasChanges = true;
+            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            oldCar.setPrice(car.getPrice());
+            System.out.print(comment + " - " + car.getId());
+        }
+        String desc = car.getDescription(), oldDesc = oldCar.getDescription();
+        if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
+            hasChanges = true;
+            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            oldCar.setDescription(car.getDescription());
+        }
+        if (car.isSoldOut()) {
+            hasChanges = true;
+            oldCar.setSoldOut(true);
+            base.remove(oldCar.getId());
+            String comment = "Автомобиль продан! Время отметки: " + CalendarHelper.getTimeStamp();
+            oldCar.getComments().add(comment);
+            System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
+        }
+        if (hasChanges) {
+            writeCarOnDisc(oldCar, false);
+            if (sendEmail) {
+                Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
+            }
+        }
+    }
+
+    private void deepCheck() {
+        Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
+        Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, Car> entry = iterator.next();
+            int id = entry.getKey();
+            Car car = entry.getValue();
+            try {
+                String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
+                if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
+                    car.setSoldOut(true);
+                    String comment = "Объявление удалено! Время отметки: " + CalendarHelper.getTimeStamp();
+                    car.getComments().add(comment);
+                    System.out.println("\n(" + car.getId() + ")Объявление удалено!");
+                    writeCarOnDisc(car, false);
+                    iterator.remove();
+                }
+                Matcher photo = photoPattern.matcher(src);
+                if (photo.find()) {
+                    String[] ar = photo.group(1).split(", ");
+                    if (ar.length > 0) {
+                        ArrayList<Integer> list = new ArrayList<>();
+                        for (String s : ar) {
+                            int i = Integer.parseInt(s);
+                            if (!car.getImages().contains(i)) {
+                                list.add(i);
+                                car.getImages().add(i);
+                            }
+                        }
+                        if (list.size() > 0) {
+                            new ImageGetter().downloadImages(car, list);
+                            writeCarOnDisc(car, false);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void initBaseFromDisc() {
         String[] folders = mainDir.list();
         if (folders != null) {
@@ -321,7 +352,7 @@ public class Explorer {
                     continue;
                 }
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "Cp1251"))) {
+                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
                     String line, prefix = "", value;
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
@@ -371,7 +402,6 @@ public class Explorer {
                                 break;
                             case ("description"):
                                 car.setDescription(value);
-//                                System.out.println(value);
                                 break;
                             case ("isFreshDetected"):
                                 car.setFreshDetected(Boolean.valueOf(value));
@@ -394,8 +424,6 @@ public class Explorer {
                                 break;
                         }
                     }
-                    if(car.getId() == 8374407)
-                        System.out.println("desc:"+car.getOwnerName());
                     System.out.print(".");
                     base.put(car.getId(), car);
                 } catch (IOException e) {
@@ -403,24 +431,6 @@ public class Explorer {
                 }
             }
         }
-    }
-
-    private Set<Integer> getImageSet(String[] input) {
-        Set<Integer> images = new LinkedHashSet<>();
-        for (String s : input) {
-            images.add(Integer.parseInt(s));
-        }
-        return images;
-    }
-
-    private static String getValue(String line) {
-        Pattern value = compile("\".+\"$");
-        Matcher m = value.matcher(line);
-        if (m.find()) {
-            String result = m.group();
-            return result.substring(1, result.length() - 1);
-        }
-        return null;
     }
 
     private void writeCarOnDisc(Car car, boolean createFolder) {
@@ -463,13 +473,36 @@ public class Explorer {
                 for (String comment : car.getComments()) {
                     writer.newLine();
                     writer.write("comment=\"" + comment + "\"");
-
                 }
                 writer.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private Set<Integer> getImageSet(String[] input) {
+        Set<Integer> images = new LinkedHashSet<>();
+        for (String s : input) {
+            images.add(Integer.parseInt(s));
+        }
+        return images;
+    }
+
+    private static String getValue(String line) {
+        Pattern value = compile("\".+\"$");
+        Matcher m = value.matcher(line);
+        if (m.find()) {
+            String result = m.group();
+            return result.substring(1, result.length() - 1);
+        }
+        return null;
+    }
+
+    private void report(Car car) {
+        System.out.printf("%n%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %-26s%s%n",
+                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(), car.getPrice(),
+                car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
     }
 
     private static class CalendarHelper {

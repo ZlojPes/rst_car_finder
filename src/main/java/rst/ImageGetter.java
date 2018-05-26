@@ -3,6 +3,7 @@ package rst;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class ImageGetter {
     private boolean downloadImage(String sourceUrl, String savePath) {
@@ -36,23 +37,24 @@ public class ImageGetter {
         return true;
     }
 
-    void downloadAllImages(Car car) {
+    void downloadImages(Car car, ArrayList<Integer> list) {
         String path = Explorer.MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel() + "\\";
         for (int i : car.getImages()) {
-            new Thread(() -> {
-                String fullPath = path + i + ".jpg";
-                String url = "http://img.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
-                String secondUrl;
-                if (!downloadImage(url, fullPath)) {
-                    secondUrl = "http://img1.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
-                    downloadImage(secondUrl, fullPath);
-                }
-            }).start();
+            if (list == null || list.contains(i)) {
+                new Thread(() -> {
+                    String fullPath = path + i + ".jpg";
+                    String url = "http://img.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
+                    String secondUrl;
+                    if (!downloadImage(url, fullPath)) {
+                        secondUrl = "http://img1.rstcars.com/oldcars/" + car.getBrand() + "/" + car.getModel() + "/big/" + car.getId() + "-" + i + ".jpg";
+                        downloadImage(secondUrl, fullPath);
+                    }
+                    if (list != null) {
+                        System.out.println("Загружено новое фото " + i + " в папку авто " + car.getId() + ";");
+                    }
+                }).start();
+            }
         }
-    }
-
-    void downloadAbsentImages(Car car) {
-
     }
 
     public static void main(String[] args) {

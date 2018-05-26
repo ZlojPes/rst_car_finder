@@ -1,9 +1,6 @@
 package rst;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.*;
@@ -21,9 +18,13 @@ public class HtmlGetter {
         Callable<String> task = () -> {
             String inputLine;
             StringBuilder stringBuilder = new StringBuilder();
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "Cp1251"))) {
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "Cp1251"))
+//                 ;BufferedWriter writer = new BufferedWriter(new FileWriter(new File("d:\\httpGetterOut.txt")))
+            ) {
                 while ((inputLine = bufferedReader.readLine()) != null) {
                     stringBuilder.append(inputLine);
+//                    writer.write(inputLine);
+//                    writer.newLine();
                 }
             } catch (IOException e) {
                 System.out.print(e.getMessage());
@@ -49,7 +50,7 @@ public class HtmlGetter {
 
     public static void main(String[] args) {
         try {
-            System.out.println(getURLSource("http://m.rst.ua/oldcars/daewoo/sens/daewoo_sens_7306453.html"));
+            System.out.println(getURLSource("http://rst.ua/oldcars/daewoo/sens/daewoo_sens_8331344.html"));
         } catch (IOException e) {
             e.printStackTrace();
         }
