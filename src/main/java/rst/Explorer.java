@@ -2,6 +2,7 @@ package rst;
 
 import javax.swing.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -281,6 +282,7 @@ public class Explorer {
             String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarHelper.getTimeStamp();
             oldCar.getComments().add(comment);
             oldCar.setDescription(car.getDescription());
+            System.out.print(comment + " - " + car.getId());
         }
         if (car.isSoldOut()) {
             hasChanges = true;
@@ -436,43 +438,27 @@ public class Explorer {
     private void writeCarOnDisc(Car car, boolean createFolder) {
         String path = MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
         if (!createFolder || new File(path).mkdir()) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(path + "\\data.txt")))) {
-                writer.write("isSoldOut=\"" + car.isSoldOut() + "\"");
-                writer.newLine();
-                writer.write("brand=\"" + car.getBrand() + "\"");
-                writer.newLine();
-                writer.write("model=\"" + car.getModel() + "\"");
-                writer.newLine();
-                writer.write("condition=\"" + car.getCondition() + "\"");
-                writer.newLine();
-                writer.write("engine=\"" + car.getEngine() + "\"");
-                writer.newLine();
-                writer.write("buildYear=\"" + car.getBuildYear() + "\"");
-                writer.newLine();
-                writer.write("price=\"" + car.getPrice() + "\"");
-                writer.newLine();
-                writer.write("exchange=\"" + car.isExchange() + "\"");
-                writer.newLine();
-                writer.write("region=\"" + car.getRegion() + "\"");
-                writer.newLine();
-                writer.write("town=\"" + car.getTown() + "\"");
-                writer.newLine();
-                writer.write("name=\"" + car.getOwnerName() + "\"");
-                writer.newLine();
-                writer.write("contacts=\"" + String.join(", ", car.getContacts()) + "\"");
-                writer.newLine();
-                writer.write("description=\"" + car.getDescription() + "\"");
-                writer.newLine();
-                writer.write("isFreshDetected=\"" + car.isFreshDetected() + "\"");
-                writer.newLine();
-                writer.write("date=\"" + car.getDetectedDate() + "\"");
-                writer.newLine();
-                writer.write("images=\"" + (car.getImages() == null ? "null" : Arrays.deepToString(car.getImages().toArray())) + "\"");
-                writer.newLine();
-                writer.write("link=\"" + car.getLink() + "\"");
+            try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path + "\\data.txt"), StandardCharsets.UTF_8))) {
+                writer.println("isSoldOut=\"" + car.isSoldOut() + "\"");
+                writer.println("brand=\"" + car.getBrand() + "\"");
+                writer.println("model=\"" + car.getModel() + "\"");
+                writer.println("condition=\"" + car.getCondition() + "\"");
+                writer.println("engine=\"" + car.getEngine() + "\"");
+                writer.println("buildYear=\"" + car.getBuildYear() + "\"");
+                writer.println("price=\"" + car.getPrice() + "\"");
+                writer.println("exchange=\"" + car.isExchange() + "\"");
+                writer.println("region=\"" + car.getRegion() + "\"");
+                writer.println("town=\"" + car.getTown() + "\"");
+                writer.println("name=\"" + car.getOwnerName() + "\"");
+                writer.println("contacts=\"" + String.join(", ", car.getContacts()) + "\"");
+                writer.println("description=\"" + car.getDescription() + "\"");
+                writer.println("isFreshDetected=\"" + car.isFreshDetected() + "\"");
+                writer.println("date=\"" + car.getDetectedDate() + "\"");
+                writer.println("images=\"" + (car.getImages() == null ? "null" : Arrays.deepToString(car.getImages().toArray())) + "\"");
+                writer.print("link=\"" + car.getLink() + "\"");
                 for (String comment : car.getComments()) {
-                    writer.newLine();
-                    writer.write("comment=\"" + comment + "\"");
+                    writer.println();
+                    writer.print("comment=\"" + comment + "\"");
                 }
                 writer.flush();
             } catch (IOException e) {
