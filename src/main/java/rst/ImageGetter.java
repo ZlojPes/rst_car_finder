@@ -38,7 +38,7 @@ public class ImageGetter {
     }
 
     void downloadImages(Car car, ArrayList<Integer> list) {
-        String path = Explorer.MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel() + "\\";
+        String path = DiscManager.getMainPath() + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel() + "\\";
         for (int i : car.getImages()) {
             if (list == null || list.contains(i)) {
                 new Thread(() -> {

@@ -1,8 +1,7 @@
 package rst;
 
-import javax.swing.*;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -12,11 +11,9 @@ import java.util.regex.Pattern;
 import static java.util.regex.Pattern.compile;
 
 public class Explorer {
-    static final String MAIN_PATH = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
-    private File mainDir = new File(MAIN_PATH);
-    private String startUrl = "http://rst.ua/oldcars/daewoo/?price[]=101&price[]=2600&year[]=2003&year[]=0&condition=1&engine[]=0&engine[]=0&fuel=0&gear=0&drive=0&results=4&saled=0&notcust=&sort=1&city=0&region[]=23&region[]=24&region[2]=5&region[3]=8&region[4]=3&model[]=142&model[]=149&from=sform";
+    static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle("config");
     private Map<Integer, Car> base = new HashMap<>();
-    private Pattern prefixPattern;
+    private DiscManager discManager = new DiscManager();
     private Pattern idPattern;
     private Pattern pricePattern;
     private Pattern buildYearPattern;
@@ -31,10 +28,9 @@ public class Explorer {
     private Pattern namePattern;
     private Pattern telPattern;
     private Pattern photoPattern;
-    private Pattern idFromFolder;
     private Pattern enginePattern;
     private Pattern conditionPattern;
-    private Pattern mainPhotoPattern;
+//    private Pattern mainPhotoPattern;
 
     // TODO parsing/writing JSON data file;
     // TODO regular check car for update;
@@ -46,7 +42,6 @@ public class Explorer {
     }
 
     private void initPatterns() {
-        prefixPattern = Pattern.compile("^\\D{4,15}=");
         datePattern = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
         idPattern = compile("\\d{7,}\\.html$");
         pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
@@ -61,25 +56,21 @@ public class Explorer {
         namePattern = compile("<strong>.+</strong>");
         telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
         photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
-        idFromFolder = compile("^\\d{7,}");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
         conditionPattern = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
-
+//        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
     }
 
     private void go() {
         long start = System.currentTimeMillis();
-        if (mainDir.exists()) {
-            System.out.print("Reading base from disc");
-            initBaseFromDisc();
+        String startUrl = null;
+        try {
+            startUrl = new String(RESOURCE_BUNDLE.getString("start_url").getBytes("ISO-8859-1"), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        if (discManager.initBaseFromDisc(base)) {
             deepCheck();
-//            System.exit(0);
-        } else {
-            if (!mainDir.mkdir()) {
-                System.out.println("Error happens during creating work directory!");
-                System.exit(1);
-            }
         }
         System.out.println("\nScanning html");
         int pageNum = 1;
@@ -120,7 +111,7 @@ public class Explorer {
                             if (!car.isSoldOut()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 addCarDetails(car);
-                                writeCarOnDisc(car, true);
+                                discManager.writeCarOnDisc(car, true);
                                 base.put(id, car);
                                 report(car);
                                 if (!firstCycle) {
@@ -189,7 +180,7 @@ public class Explorer {
             Matcher photo = photoPattern.matcher(carHtml);
             if (photo.find()) {
                 String[] src = photo.group(1).split(", ");
-                car.setImages(getImageSet(src));
+                car.setImages(src);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -293,7 +284,7 @@ public class Explorer {
             System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
         }
         if (hasChanges) {
-            writeCarOnDisc(oldCar, false);
+            discManager.writeCarOnDisc(oldCar, false);
             if (sendEmail) {
                 Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
             }
@@ -305,7 +296,6 @@ public class Explorer {
         Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, Car> entry = iterator.next();
-            int id = entry.getKey();
             Car car = entry.getValue();
             try {
                 String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
@@ -314,7 +304,7 @@ public class Explorer {
                     String comment = "Объявление удалено! Время отметки: " + CalendarHelper.getTimeStamp();
                     car.getComments().add(comment);
                     System.out.println("\n(" + car.getId() + ")Объявление удалено!");
-                    writeCarOnDisc(car, false);
+                    discManager.writeCarOnDisc(car, false);
                     iterator.remove();
                 }
                 Matcher photo = photoPattern.matcher(src);
@@ -331,7 +321,7 @@ public class Explorer {
                         }
                         if (list.size() > 0) {
                             new ImageGetter().downloadImages(car, list);
-                            writeCarOnDisc(car, false);
+                            discManager.writeCarOnDisc(car, false);
                         }
                     }
                 }
@@ -339,150 +329,6 @@ public class Explorer {
                 e.printStackTrace();
             }
         }
-    }
-
-    private void initBaseFromDisc() {
-        String[] folders = mainDir.list();
-        if (folders != null) {
-            nextFolder:
-            for (String folder : folders) {
-                Car car = new Car();
-                Matcher m = idFromFolder.matcher(folder);
-                if (m.find()) {
-                    car.setId(Integer.parseInt(m.group()));
-                } else {
-                    continue;
-                }
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                        MAIN_PATH + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
-                    String line, prefix = "", value;
-                    while ((line = reader.readLine()) != null) {
-                        if ((value = getValue(line)) == null) {
-                            continue;
-                        }
-                        Matcher pr = prefixPattern.matcher(line);
-                        if (pr.find()) {
-                            prefix = pr.group().substring(0, pr.group().length() - 1);
-                        }
-                        switch (prefix) {
-                            case ("isSoldOut"):
-                                if (Boolean.valueOf(value)) {
-                                    continue nextFolder;
-                                }
-                            case ("brand"):
-                                car.setBrand(value);
-                                break;
-                            case ("model"):
-                                car.setModel(value);
-                                break;
-                            case ("condition"):
-                                car.setCondition(value);
-                                break;
-                            case ("engine"):
-                                car.setEngine(value);
-                                break;
-                            case ("buildYear"):
-                                car.setBuildYear(Integer.parseInt(value));
-                                break;
-                            case ("price"):
-                                car.setPrice(Integer.parseInt(value));
-                                break;
-                            case ("exchange"):
-                                car.setExchange(Boolean.valueOf(value));
-                                break;
-                            case ("region"):
-                                car.setRegion(value);
-                                break;
-                            case ("town"):
-                                car.setTown(value);
-                                break;
-                            case ("name"):
-                                car.setOwnerName(value);
-                                break;
-                            case ("contacts"):
-                                car.setContacts(value.split(", "));
-                                break;
-                            case ("description"):
-                                car.setDescription(value);
-                                break;
-                            case ("isFreshDetected"):
-                                car.setFreshDetected(Boolean.valueOf(value));
-                                break;
-                            case ("date"):
-                                car.setDetectedDate(value);
-                                break;
-                            case ("images"):
-                                if (value.equals("null")) {
-                                    break;
-                                }
-                                String[] sub = value.substring(1, value.length() - 1).split(", ");
-                                car.setImages(getImageSet(sub));
-                                break;
-                            case ("link"):
-                                car.setLink(value);
-                                break;
-                            case ("comment"):
-                                car.getComments().add(value);
-                                break;
-                        }
-                    }
-                    System.out.print(".");
-                    base.put(car.getId(), car);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void writeCarOnDisc(Car car, boolean createFolder) {
-        String path = MAIN_PATH + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
-        if (!createFolder || new File(path).mkdir()) {
-            try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path + "\\data.txt"), StandardCharsets.UTF_8))) {
-                writer.println("isSoldOut=\"" + car.isSoldOut() + "\"");
-                writer.println("brand=\"" + car.getBrand() + "\"");
-                writer.println("model=\"" + car.getModel() + "\"");
-                writer.println("condition=\"" + car.getCondition() + "\"");
-                writer.println("engine=\"" + car.getEngine() + "\"");
-                writer.println("buildYear=\"" + car.getBuildYear() + "\"");
-                writer.println("price=\"" + car.getPrice() + "\"");
-                writer.println("exchange=\"" + car.isExchange() + "\"");
-                writer.println("region=\"" + car.getRegion() + "\"");
-                writer.println("town=\"" + car.getTown() + "\"");
-                writer.println("name=\"" + car.getOwnerName() + "\"");
-                writer.println("contacts=\"" + String.join(", ", car.getContacts()) + "\"");
-                writer.println("description=\"" + car.getDescription() + "\"");
-                writer.println("isFreshDetected=\"" + car.isFreshDetected() + "\"");
-                writer.println("date=\"" + car.getDetectedDate() + "\"");
-                writer.println("images=\"" + (car.getImages() == null ? "null" : Arrays.deepToString(car.getImages().toArray())) + "\"");
-                writer.print("link=\"" + car.getLink() + "\"");
-                for (String comment : car.getComments()) {
-                    writer.println();
-                    writer.print("comment=\"" + comment + "\"");
-                }
-                writer.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private Set<Integer> getImageSet(String[] input) {
-        Set<Integer> images = new LinkedHashSet<>();
-        for (String s : input) {
-            images.add(Integer.parseInt(s));
-        }
-        return images;
-    }
-
-    private static String getValue(String line) {
-        Pattern value = compile("\".+\"$");
-        Matcher m = value.matcher(line);
-        if (m.find()) {
-            String result = m.group();
-            return result.substring(1, result.length() - 1);
-        }
-        return null;
     }
 
     private void report(Car car) {

@@ -1,5 +1,6 @@
 package rst;
 
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -138,8 +139,11 @@ public class Car implements Comparable<Car> {
         return images;
     }
 
-    void setImages(Set<Integer> images) {
-        this.images = images;
+    void setImages(String[] input) {
+        images = new LinkedHashSet<>();
+        for (String s : input) {
+            images.add(Integer.parseInt(s));
+        }
     }
 
     String[] getContacts() {
