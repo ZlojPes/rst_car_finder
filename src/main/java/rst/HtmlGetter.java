@@ -28,7 +28,6 @@ public class HtmlGetter {
                 }
             } catch (IOException e) {
                 System.out.print(e.getMessage());
-                ;
             }
             return stringBuilder.toString();
         };

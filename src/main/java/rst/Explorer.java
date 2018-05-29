@@ -337,7 +337,7 @@ public class Explorer {
 
     private static void initProperties() {
         prop = new Properties();
-        try(InputStream input = new FileInputStream("./config.properties")) {
+        try (InputStream input = new FileInputStream("./config.properties")) {
             prop.load(input);
         } catch (IOException ex) {
             System.out.println("File 'config.properties' is not found!");
