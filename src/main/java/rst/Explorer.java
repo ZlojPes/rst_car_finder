@@ -1,7 +1,8 @@
 package rst;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -11,7 +12,6 @@ import java.util.regex.Pattern;
 import static java.util.regex.Pattern.compile;
 
 public class Explorer {
-    static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle("config");
     private Map<Integer, Car> base = new HashMap<>();
     private DiscManager discManager = new DiscManager();
     private Pattern idPattern;
@@ -30,12 +30,14 @@ public class Explorer {
     private Pattern photoPattern;
     private Pattern enginePattern;
     private Pattern conditionPattern;
+    private static Properties prop;
 //    private Pattern mainPhotoPattern;
 
     // TODO parsing/writing JSON data file;
     // TODO regular check car for update;
 
     public static void main(String[] args) {
+        initProperties();
         Explorer explorer = new Explorer();
         explorer.initPatterns();
         explorer.go();
@@ -63,15 +65,11 @@ public class Explorer {
 
     private void go() {
         long start = System.currentTimeMillis();
-        String startUrl = null;
-        try {
-            startUrl = new String(RESOURCE_BUNDLE.getString("start_url").getBytes("ISO-8859-1"), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        String startUrl = prop.getProperty("start_url");
         if (discManager.initBaseFromDisc(base)) {
             deepCheck();
         }
+
         System.out.println("\nScanning html");
         int pageNum = 1;
         int topId = 0, markerId = 0;
@@ -335,6 +333,20 @@ public class Explorer {
         System.out.printf("%n%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %-26s%s%n",
                 car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(), car.getPrice(),
                 car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
+    }
+
+    private static void initProperties() {
+        prop = new Properties();
+        try(InputStream input = new FileInputStream("./config.properties")) {
+            prop.load(input);
+        } catch (IOException ex) {
+            System.out.println("File 'config.properties' is not found!");
+            System.exit(1);
+        }
+    }
+
+    static Properties getProp() {
+        return prop;
     }
 
     private static class CalendarHelper {

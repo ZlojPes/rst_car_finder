@@ -11,14 +11,15 @@ import java.util.regex.Pattern;
 import static java.util.regex.Pattern.compile;
 
 class DiscManager {
-    private static String mainPath = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rstcars";
+    private static final String mainPath;
 
     static {
-        try {
-            mainPath = new String(Explorer.RESOURCE_BUNDLE.getString("work_directory").getBytes("ISO-8859-1"), "UTF-8");
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Work directory has been set to %user%\\Documents\\rstcars");
+        String path = Explorer.getProp().getProperty("work_directory");
+        if (!path.equals("")) {
+            mainPath = path;
+        } else {
+            System.out.println("Work directory has been set to %user%\\Documents\\rst");
+            mainPath = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
         }
     }
 
@@ -27,6 +28,7 @@ class DiscManager {
 
 
     boolean initBaseFromDisc(Map<Integer, Car> base) {
+        System.out.println(mainPath);
         if (mainDir.exists()) {
             System.out.print("Reading base from disc");
         } else {

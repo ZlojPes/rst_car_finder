@@ -28,6 +28,7 @@ public class Car implements Comparable<Car> {
 
     Car() {
         comments = new LinkedList<>();
+        images = new LinkedHashSet<>();
     }
 
 
