@@ -12,54 +12,24 @@ import java.util.regex.Pattern;
 import static java.util.regex.Pattern.compile;
 
 public class Explorer {
-    private Map<Integer, Car> base = new HashMap<>();
-    private DiscManager discManager = new DiscManager();
-    private Pattern idPattern;
-    private Pattern pricePattern;
-    private Pattern buildYearPattern;
-    private Pattern descriptionPattern;
-    private Pattern datePattern;
-    private Pattern linkToCarPage;
+    private Map<Integer, Car> base;
+    private DiscManager discManager;
     private Pattern carHtmlBlock;
-    private Pattern regionPattern;
-    private Pattern bigDescription;
-    private Pattern townPattern;
-    private Pattern contactsPattern;
-    private Pattern namePattern;
-    private Pattern telPattern;
     private Pattern photoPattern;
-    private Pattern enginePattern;
-    private Pattern conditionPattern;
     private static Properties prop;
 //    private Pattern mainPhotoPattern;
-
-    // TODO parsing/writing JSON data file;
-    // TODO regular check car for update;
 
     public static void main(String[] args) {
         initProperties();
         Explorer explorer = new Explorer();
-        explorer.initPatterns();
         explorer.go();
     }
 
-    private void initPatterns() {
-        datePattern = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
-        idPattern = compile("\\d{7,}\\.html$");
-        pricePattern = compile("данные НБУ\">\\$\\d{0,3}'?\\d{3}</span>");
-        buildYearPattern = compile("d-l-i-s\">(\\d{4})");
-        descriptionPattern = compile("-d-d\">(.*?)</div>");
-        linkToCarPage = compile("oldcars/.+\\d+\\.html");
+    private Explorer() {
         carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
-        regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
-        bigDescription = compile("desc rst-uix-block-more\">.+?</div>");
-        townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
-        contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
-        namePattern = compile("<strong>.+</strong>");
-        telPattern = compile("тел\\.: <a href=\"tel:\\d{10}");
         photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
-        enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-        conditionPattern = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
+        base = new HashMap<>();
+        discManager = new DiscManager();
 //        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
     }
 
@@ -73,7 +43,7 @@ public class Explorer {
         System.out.println("\nScanning html");
         int pageNum = 1;
         int topId = 0, markerId = 0;
-        long startTime;
+        long startTime, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval")) * 1000;
         boolean firstCycle = true;
         while (true) {
             startTime = System.currentTimeMillis();
@@ -85,7 +55,7 @@ public class Explorer {
                     carsHtml.add(m.group());
                 }
                 for (String carHtml : carsHtml) {
-                    Car car = getCarFromHtml(carHtml);
+                    Car car = Car.getCarFromHtml(carHtml);
                     if (car != null) {
                         int id = car.getId();
                         if (carsHtml.indexOf(carHtml) == 0) {
@@ -108,7 +78,7 @@ public class Explorer {
                         if (!base.containsKey(id)) {
                             if (!car.isSoldOut()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
-                                addCarDetails(car);
+                                car.addDetails();
                                 discManager.writeCarOnDisc(car, true);
                                 base.put(id, car);
                                 report(car);
@@ -126,7 +96,7 @@ public class Explorer {
                 }
                 pageNum++;
                 System.out.print(".");
-                long delay = 5000 - (System.currentTimeMillis() - startTime);
+                long delay = fullDelay - (System.currentTimeMillis() - startTime);
                 if (delay > 0) {
                     Thread.sleep(delay);
                 }
@@ -139,119 +109,6 @@ public class Explorer {
                 }
             }
         }
-    }
-
-    private void addCarDetails(Car car) {
-        try {
-            String carHtml = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
-            if (car.getDescription().equals("big")) {
-                Matcher m = bigDescription.matcher(carHtml);
-                if (m.find()) {
-                    car.setDescription(m.group().substring(49, m.group().length() - 26));
-                }
-            }
-            Matcher m2 = townPattern.matcher(carHtml);
-            if (m2.find()) {
-                car.setTown(m2.group(2) == null ? m2.group(4) : m2.group(2)/*.substring(2, m2.group().length() - 17)*/);
-            }
-            Matcher m3 = contactsPattern.matcher(carHtml);
-            if (m3.find()) {
-                String contacts = m3.group();
-                Matcher name = namePattern.matcher(contacts);
-                if (name.find()) {
-                    car.setOwnerName(name.group().substring(8, name.group().length() - 9));
-                }
-                StringBuilder tels = new StringBuilder();
-                Matcher tel = telPattern.matcher(contacts);
-                int counter = 0;
-                while (tel.find()) {
-                    tels.append(tel.group(), 19, tel.group().length());
-                    counter++;
-                }
-                String allTels = tels.toString();
-                String[] phones = new String[counter];
-                for (int i = 0; i < counter; i++) {
-                    phones[i] = allTels.substring(10 * i, 10 * i + 10);
-                }
-                car.setContacts(phones);
-            }
-            Matcher photo = photoPattern.matcher(carHtml);
-            if (photo.find()) {
-                String[] src = photo.group(1).split(", ");
-                car.setImages(src);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private Car getCarFromHtml(String carHtml) {
-        Car car = new Car();
-        String link;
-        Matcher m = linkToCarPage.matcher(carHtml);
-        if (m.find()) {
-            link = m.group();
-            car.setLink(link);
-            String[] name = link.split("/");
-            car.setBrand(name[1]);
-            car.setModel(name[2]);
-        } else {
-            return null;
-        }
-        Matcher m2 = idPattern.matcher(link);
-        if (m2.find()) {
-            String ids = m2.group();
-            car.setId(Integer.parseInt(ids.substring(0, ids.length() - 5)));
-        }
-        car.setSoldOut(carHtml.contains("Уже ПРОДАНО"));
-        car.setFreshDetected(carHtml.contains("rst-ocb-i-s-fresh"));
-        car.setExchange(carHtml.contains("ocb-i-exchange"));
-        Matcher m3 = pricePattern.matcher(carHtml);
-        if (m3.find()) {
-            char[] priceArray = m3.group().substring(13, m3.group().length() - 7).toCharArray();
-            StringBuilder sb = new StringBuilder();
-            for (char c : priceArray) {
-                if (c > 47 && c < 58) {
-                    sb.append(c);
-                }
-            }
-            car.setPrice(Integer.parseInt(sb.toString()));
-        }
-        Matcher m4 = buildYearPattern.matcher(carHtml);
-        if (m4.find()) {
-            car.setBuildYear(Integer.parseInt(m4.group(1)));
-        }
-        Matcher m5 = descriptionPattern.matcher(carHtml);
-        if (m5.find()) {
-            String desc = m5.group(1);
-            if (desc.length() == 120) {
-                desc = "big";
-            }
-            car.setDescription(desc);
-        }
-        Matcher m6 = datePattern.matcher(carHtml);
-        if (m6.find()) {
-            if (m6.group().contains("сегодня")) {
-                car.setDetectedDate(CalendarHelper.getTodayDateString() + " " + m6.group(1));
-            } else if (m6.group().contains("вчера")) {
-                car.setDetectedDate(CalendarHelper.getYesterdayDateString() + " " + m6.group(1));
-            } else {
-                car.setDetectedDate(m6.group(1) + " 00:00");
-            }
-        }
-        Matcher m7 = regionPattern.matcher(carHtml);
-        if (m7.find()) {
-            car.setRegion(m7.group(1));
-        }
-        Matcher m8 = enginePattern.matcher(carHtml);
-        if (m8.find()) {
-            car.setEngine(m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3));
-        }
-        Matcher m9 = conditionPattern.matcher(carHtml);
-        if (m9.find()) {
-            car.setCondition(m9.group(1));
-        }
-        return car;
     }
 
     private void checkCarForUpdates(Car car, boolean sendEmail) {
@@ -331,8 +188,8 @@ public class Explorer {
 
     private void report(Car car) {
         System.out.printf("%n%6s %-6s%-8dРегион:%-15sГород:%-11sПродано:%-6sСвежее:%-5s%5s$%5s%17s %-26s%s%n",
-                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(), car.getPrice(),
-                car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
+                car.getBrand(), car.getModel(), car.getId(), car.getRegion(), car.getTown(), car.isSoldOut(), car.isFreshDetected(),
+                car.getPrice(), car.getBuildYear(), car.getDetectedDate(), car.getEngine(), car.getDescription());
     }
 
     private static void initProperties() {
@@ -349,7 +206,7 @@ public class Explorer {
         return prop;
     }
 
-    private static class CalendarHelper {
+    static class CalendarHelper {
         private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
         private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 
@@ -359,11 +216,11 @@ public class Explorer {
             return cal.getTime();
         }
 
-        private static String getYesterdayDateString() {
+        static String getYesterdayDateString() {
             return dateFormat.format(yesterday());
         }
 
-        private static String getTodayDateString() {
+        static String getTodayDateString() {
             return dateFormat.format(new Date());
         }
 

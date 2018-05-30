@@ -8,6 +8,8 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 public class Mail {
+    private static Properties prop = Explorer.getProp();
+
     static void sendCar(Car car) {
         sendCar(null, car, null);
     }
@@ -31,18 +33,18 @@ public class Mail {
     }
 
     static void alarmByEmail(String subject, String message) {
-        final String fromEmail = "zloj_pes@ukr.net";
-        final String password = "qaz45asd";
-        final String toEmail = "asp4rever@gmail.com";
+        final String fromEmail = prop.getProperty("from_email");
+        final String password = prop.getProperty("password");
+        final String toEmail = prop.getProperty("to_email");
 
         System.out.println("SSLEmail Start");
         Properties props = new Properties();
-        props.put("mail.smtp.host", "smtp.ukr.net"); //SMTP Host
-        props.put("mail.smtp.socketFactory.port", "465"); //SSL Port
+        props.put("mail.smtp.host", prop.getProperty("smtp_host")); //SMTP Host
+        props.put("mail.smtp.socketFactory.port", prop.getProperty("ssl_port")); //SSL Port
         props.put("mail.smtp.socketFactory.class",
                 "javax.net.ssl.SSLSocketFactory"); //SSL Factory Class
         props.put("mail.smtp.auth", "true"); //Enabling SMTP Authentication
-        props.put("mail.smtp.port", "465"); //SMTP Port
+        props.put("mail.smtp.port", prop.getProperty("smtp_port")); //SMTP Port
 
         Authenticator auth = new Authenticator() {
             //override the getPasswordAuthentication method
@@ -78,6 +80,6 @@ public class Mail {
     }
 
     public static void main(String[] args) {
-        alarmByEmail("test", "Test sending message\nПроверка русской раскладки");
+        alarmByEmail("test", "Test sending message\nПроверка кириллицы");
     }
 }

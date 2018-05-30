@@ -18,7 +18,7 @@ class DiscManager {
         if (!path.equals("")) {
             mainPath = path;
         } else {
-            System.out.println("Work directory has been set to %user%\\Documents\\rst");
+            System.out.println("Work directory has been set to C:\\%user%\\Documents\\rst");
             mainPath = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
         }
     }
@@ -28,10 +28,10 @@ class DiscManager {
 
 
     boolean initBaseFromDisc(Map<Integer, Car> base) {
-        System.out.println(mainPath);
         if (mainDir.exists()) {
-            System.out.print("Reading base from disc");
+            System.out.print("Reading base from disc (" + mainPath + ")");
         } else {
+            System.out.print("Creating work directory...");
             if (!mainDir.mkdir()) {
                 System.out.println("Error happens during creating work directory!");
                 System.exit(1);
