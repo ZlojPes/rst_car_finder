@@ -3,8 +3,6 @@ package rst;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,7 +13,6 @@ public class Explorer {
     private Map<Integer, Car> base;
     private DiscManager discManager;
     private Pattern carHtmlBlock;
-    private Pattern photoPattern;
     private static Properties prop;
 //    private Pattern mainPhotoPattern;
 
@@ -27,7 +24,6 @@ public class Explorer {
 
     private Explorer() {
         carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
-        photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
         base = new HashMap<>();
         discManager = new DiscManager();
 //        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
@@ -37,16 +33,15 @@ public class Explorer {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
         if (discManager.initBaseFromDisc(base)) {
-            deepCheck();
+            Car.deepCheck(base, discManager);
         }
-
         System.out.println("\nScanning html");
         int pageNum = 1;
         int topId = 0, markerId = 0;
-        long startTime, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval")) * 1000;
+        long startCycle, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval")) * 1000;
         boolean firstCycle = true;
         while (true) {
-            startTime = System.currentTimeMillis();
+            startCycle = System.currentTimeMillis();
             try {
                 String html = HtmlGetter.getURLSource(startUrl + "&start=" + pageNum);
                 ArrayList<String> carsHtml = new ArrayList<>(40);
@@ -96,7 +91,7 @@ public class Explorer {
                 }
                 pageNum++;
                 System.out.print(".");
-                long delay = fullDelay - (System.currentTimeMillis() - startTime);
+                long delay = fullDelay - (System.currentTimeMillis() - startCycle);
                 if (delay > 0) {
                     Thread.sleep(delay);
                 }
@@ -108,6 +103,10 @@ public class Explorer {
                     System.exit(1);
                 }
             }
+            if (System.currentTimeMillis() - start > 7200000) {
+                Car.deepCheck(base, discManager);
+                start = System.currentTimeMillis();
+            }
         }
     }
 
@@ -117,7 +116,7 @@ public class Explorer {
 
         if (oldCar.getPrice() != car.getPrice()) {
             hasChanges = true;
-            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarHelper.getTimeStamp();
+            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarUtil.getTimeStamp();
             oldCar.getComments().add(comment);
             oldCar.setPrice(car.getPrice());
             System.out.print(comment + " - " + car.getId());
@@ -125,16 +124,16 @@ public class Explorer {
         String desc = car.getDescription(), oldDesc = oldCar.getDescription();
         if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
             hasChanges = true;
-            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarHelper.getTimeStamp();
+            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarUtil.getTimeStamp();
             oldCar.getComments().add(comment);
             oldCar.setDescription(car.getDescription());
             System.out.print(comment + " - " + car.getId());
         }
         if (car.isSoldOut()) {
             hasChanges = true;
-            oldCar.setSoldOut(true);
+            oldCar.setSoldOut();
             base.remove(oldCar.getId());
-            String comment = "Автомобиль продан! Время отметки: " + CalendarHelper.getTimeStamp();
+            String comment = "Автомобиль продан! Время отметки: " + CalendarUtil.getTimeStamp();
             oldCar.getComments().add(comment);
             System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
         }
@@ -142,46 +141,6 @@ public class Explorer {
             discManager.writeCarOnDisc(oldCar, false);
             if (sendEmail) {
                 Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
-            }
-        }
-    }
-
-    private void deepCheck() {
-        Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
-        Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, Car> entry = iterator.next();
-            Car car = entry.getValue();
-            try {
-                String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
-                if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
-                    car.setSoldOut(true);
-                    String comment = "Объявление удалено! Время отметки: " + CalendarHelper.getTimeStamp();
-                    car.getComments().add(comment);
-                    System.out.println("\n(" + car.getId() + ")Объявление удалено!");
-                    discManager.writeCarOnDisc(car, false);
-                    iterator.remove();
-                }
-                Matcher photo = photoPattern.matcher(src);
-                if (photo.find()) {
-                    String[] ar = photo.group(1).split(", ");
-                    if (ar.length > 0) {
-                        ArrayList<Integer> list = new ArrayList<>();
-                        for (String s : ar) {
-                            int i = Integer.parseInt(s);
-                            if (!car.getImages().contains(i)) {
-                                list.add(i);
-                                car.getImages().add(i);
-                            }
-                        }
-                        if (list.size() > 0) {
-                            new ImageGetter().downloadImages(car, list);
-                            discManager.writeCarOnDisc(car, false);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }
@@ -204,28 +163,5 @@ public class Explorer {
 
     static Properties getProp() {
         return prop;
-    }
-
-    static class CalendarHelper {
-        private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-        private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-
-        private static Date yesterday() {
-            final Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.DATE, -1);
-            return cal.getTime();
-        }
-
-        static String getYesterdayDateString() {
-            return dateFormat.format(yesterday());
-        }
-
-        static String getTodayDateString() {
-            return dateFormat.format(new Date());
-        }
-
-        private static String getTimeStamp() {
-            return fullDateFormat.format(new Date());
-        }
     }
 }

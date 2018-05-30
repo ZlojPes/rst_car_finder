@@ -5,7 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
-public class ImageGetter {
+class ImageGetter {
     private boolean downloadImage(String sourceUrl, String savePath) {
         URL url = null;
         try {
@@ -55,9 +55,5 @@ public class ImageGetter {
                 }).start();
             }
         }
-    }
-
-    public static void main(String[] args) {
-        new ImageGetter().downloadImage("http://img.rstcars.com/oldcars/daewoo/sens/big/7485197-4.jpg", "d://saved_image.jpg");
     }
 }

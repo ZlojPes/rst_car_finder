@@ -97,7 +97,7 @@ class DiscManager {
                                 car.setOwnerName(value);
                                 break;
                             case ("contacts"):
-                                car.setContacts(value.split(", "));
+                                car.setPhones(value.split(", "));
                                 break;
                             case ("description"):
                                 car.setDescription(value);
@@ -150,7 +150,7 @@ class DiscManager {
                 writer.println("region=\"" + car.getRegion() + "\"");
                 writer.println("town=\"" + car.getTown() + "\"");
                 writer.println("name=\"" + car.getOwnerName() + "\"");
-                writer.println("contacts=\"" + String.join(", ", car.getContacts()) + "\"");
+                writer.println("contacts=\"" + String.join(", ", car.getPhones()) + "\"");
                 writer.println("description=\"" + car.getDescription() + "\"");
                 writer.println("isFreshDetected=\"" + car.isFreshDetected() + "\"");
                 writer.println("date=\"" + car.getDetectedDate() + "\"");

@@ -1,10 +1,7 @@
 package rst;
 
 import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +20,7 @@ public class Car implements Comparable<Car> {
     private int buildYear;
     private String detectedDate;
     private String description;
-    private String[] contacts;
+    private ArrayList<String> phones;
     private Set<Integer> images;
     private boolean isSoldOut;
     private boolean freshDetected;
@@ -37,7 +34,6 @@ public class Car implements Comparable<Car> {
     private static final Pattern buildYearPattern;
     private static final Pattern descriptionPattern;
     private static final Pattern linkToCarPage;
-    private static final Pattern carHtmlBlock;
     private static final Pattern regionPattern;
     private static final Pattern bigDescription;
     private static final Pattern townPattern;
@@ -55,19 +51,20 @@ public class Car implements Comparable<Car> {
         buildYearPattern = compile("d-l-i-s\">(\\d{4})");
         descriptionPattern = compile("-d-d\">(.*?)</div>");
         linkToCarPage = compile("oldcars/.+\\d+\\.html");
-        carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
         regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
-        bigDescription = compile("desc rst-uix-block-more\">.+?</div>");
+        bigDescription = compile("desc rst-uix-block-more\">\\s*(.+?)\\s*</div>");
         townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
-        namePattern = compile("<strong>.+</strong>");
+        namePattern = compile("<strong>(.+)</strong>");
         telPattern = compile("тел\\.: <a href=\"tel:(\\d{10})");
         photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
         enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
         conditionPattern = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
     }
+
     Car() {
         comments = new LinkedList<>();
+        phones = new ArrayList<>();
         images = new LinkedHashSet<>();
     }
 
@@ -183,22 +180,22 @@ public class Car implements Comparable<Car> {
     void setImages(String[] input) {
         images = new LinkedHashSet<>();
         for (String s : input) {
-            if(!s.equals("")){
-                try{
+            if (!s.equals("")) {
+                try {
                     images.add(Integer.parseInt(s));
-                }catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     System.out.println("Images data is corrupt in directory " + id + ". Please delete and reload it!");
                 }
             }
         }
     }
 
-    String[] getContacts() {
-        return contacts;
+    ArrayList<String> getPhones() {
+        return phones;
     }
 
-    void setContacts(String[] contacts) {
-        this.contacts = contacts;
+    void setPhones(String[] ph) {
+        phones.addAll(Arrays.asList(ph));
     }
 
     String getModel() {
@@ -221,8 +218,8 @@ public class Car implements Comparable<Car> {
         return isSoldOut;
     }
 
-    void setSoldOut(boolean soldOut) {
-        isSoldOut = soldOut;
+    void setSoldOut() {
+        isSoldOut = true;
     }
 
     boolean isFreshDetected() {
@@ -276,9 +273,9 @@ public class Car implements Comparable<Car> {
         Matcher m6 = datePattern.matcher(carHtml);
         if (m6.find()) {
             if (m6.group().contains("сегодня")) {
-                car.detectedDate = Explorer.CalendarHelper.getTodayDateString() + " " + m6.group(1);
+                car.detectedDate = CalendarUtil.getTodayDateString() + " " + m6.group(1);
             } else if (m6.group().contains("вчера")) {
-                car.detectedDate = Explorer.CalendarHelper.getYesterdayDateString() + " " + m6.group(1);
+                car.detectedDate = CalendarUtil.getYesterdayDateString() + " " + m6.group(1);
             } else {
                 car.detectedDate = m6.group(1) + " 00:00";
             }
@@ -300,45 +297,86 @@ public class Car implements Comparable<Car> {
 
     void addDetails() {
         try {
-            String carHtml = HtmlGetter.getURLSource("http://m.rst.ua/" + link);
-            if (description.equals("big")) {
-                Matcher m = bigDescription.matcher(carHtml);
-                if (m.find() && m.groupCount() > 0) {
-                    description = m.group(1);
-                }
-            }
-            Matcher m2 = townPattern.matcher(carHtml);
-            if (m2.find()) {
-                town = m2.group(2) == null ? m2.group(4) : m2.group(2);
-            }
-            Matcher m3 = contactsPattern.matcher(carHtml);
-            if (m3.find()) {
-                String contacts = m3.group();
-                Matcher name = namePattern.matcher(contacts);
-                if (name.find()) {
-                    ownerName = name.group().substring(8, name.group().length() - 9);
-                }
-                StringBuilder tels = new StringBuilder();
-                Matcher tel = telPattern.matcher(contacts);
-                int counter = 0;
-                while (tel.find()) {
-                    tels.append(tel.group(1));
-                    counter++;
-                }
-                String allTels = tels.toString();
-                String[] phones = new String[counter];
-                for (int i = 0; i < counter; i++) {
-                    phones[i] = allTels.substring(10 * i, 10 * i + 10);
-                }
-                this.contacts = phones;
-            }
-            Matcher photo = photoPattern.matcher(carHtml);
-            if (photo.find()) {
-                String[] src = photo.group(1).split(", ");
-                setImages(src);
-            }
+            addDetails(HtmlGetter.getURLSource("http://m.rst.ua/" + link));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Cannot add detail to car " + id + ". Error:" + e.getMessage());
+        }
+    }
+
+    private boolean addDetails(String src) {
+        boolean carWasChanged = false;
+        if (description != null && description.equals("big")) {
+            Matcher m = bigDescription.matcher(src);
+            if (m.find()) {
+                description = m.group(1);
+                carWasChanged = true;
+            }
+        }
+        Matcher m2 = townPattern.matcher(src);
+        if (m2.find()) {
+            town = m2.group(2) == null ? m2.group(4) : m2.group(2);
+            carWasChanged = true;
+        }
+        Matcher m3 = contactsPattern.matcher(src);
+        if (m3.find()) {
+            String contacts = m3.group();
+            Matcher name = namePattern.matcher(contacts);
+            if (name.find() && !name.group(1).equals(ownerName)) {
+                ownerName = name.group(1);
+                carWasChanged = true;
+            }
+            Matcher tel = telPattern.matcher(contacts);
+            while (tel.find()) {
+                phones.add(tel.group(1));
+                carWasChanged = true;
+            }
+        }
+        Matcher photo = photoPattern.matcher(src);
+        if (photo.find()) {
+            String[] ar = photo.group(1).split(", ");
+            if (ar.length > 0) {
+                ArrayList<Integer> list = new ArrayList<>();
+                for (String s : ar) {
+                    int i = Integer.parseInt(s);
+                    if (!images.contains(i)) {
+                        list.add(i);
+                        images.add(i);
+                    }
+                }
+                if (list.size() > 0) {
+                    new ImageGetter().downloadImages(this, list);
+                    carWasChanged = true;
+                }
+            }
+        }
+        return carWasChanged;
+    }
+
+    static void deepCheck(Map<Integer, Car> base, DiscManager discManager) {
+        Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
+        Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, Car> entry = iterator.next();
+            Car car = entry.getValue();
+            boolean carWasChanged;
+            try {
+                String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
+                if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
+                    car.setSoldOut();
+                    String comment = "Объявление удалено! Время отметки: " + CalendarUtil.getTimeStamp();
+                    car.getComments().add(comment);
+                    System.out.println("\n(" + car.getId() + ")Объявление удалено!");
+                    iterator.remove();
+                    carWasChanged = true;
+                } else {
+                    carWasChanged = car.addDetails(src);
+                }
+                if (carWasChanged) {
+                    discManager.writeCarOnDisc(car, false);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
