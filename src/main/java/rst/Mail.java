@@ -23,7 +23,7 @@ public class Mail {
                 .append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ")
                 .append(car.getRegion()).append("\nГород: ").append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет")
                 .append("\nописание: ").append(car.getDescription()).append("\nИмя:").append(car.getOwnerName())
-                .append(" - ").append(car.getPhones().size() > 0 ? car.getPhones().get(0) : "").append("\nhttp://rst.ua/")
+                .append(" - ").append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "").append("\nhttp://rst.ua/")
                 .append(car.getLink()).append("\nКомментарии:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);

@@ -20,7 +20,7 @@ public class Car implements Comparable<Car> {
     private int buildYear;
     private String detectedDate;
     private String description;
-    private ArrayList<String> phones;
+    private Set<String> phones;
     private Set<Integer> images;
     private boolean isSoldOut;
     private boolean freshDetected;
@@ -35,6 +35,7 @@ public class Car implements Comparable<Car> {
     private static final Pattern descriptionPattern;
     private static final Pattern linkToCarPage;
     private static final Pattern regionPattern;
+    private static final Pattern regionDetailPattern;
     private static final Pattern bigDescription;
     private static final Pattern townPattern;
     private static final Pattern contactsPattern;
@@ -52,6 +53,7 @@ public class Car implements Comparable<Car> {
         descriptionPattern = compile("-d-d\">(.*?)</div>");
         linkToCarPage = compile("oldcars/.+\\d+\\.html");
         regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
+        regionDetailPattern = compile(">(?:([А-Яа-я]+)</a></span>Область)|(?:>Область<.+?>([А-Яа-я]+)</a>)");
         bigDescription = compile("desc rst-uix-block-more\">\\s*(.+?)\\s*</div>");
         townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
@@ -64,10 +66,11 @@ public class Car implements Comparable<Car> {
 
     Car() {
         comments = new LinkedList<>();
-        phones = new ArrayList<>();
+        phones = new HashSet<>();
         images = new LinkedHashSet<>();
     }
 
+    //Старое описание: <p><strong>Возможен обмен.</strong> </p>Требуется покраски машина люкс 31.05.2018 15:26:37 - 8314631
 
     int getPrice() {
         return price;
@@ -190,8 +193,14 @@ public class Car implements Comparable<Car> {
         }
     }
 
-    ArrayList<String> getPhones() {
-        return phones;
+    String[] getPhones() {
+        Iterator<String> iterator = phones.iterator();
+        String[] out = new String[phones.size()];
+        int counter = 0;
+        while (iterator.hasNext()) {
+            out[counter] = iterator.next();
+        }
+        return out;
     }
 
     void setPhones(String[] ph) {
@@ -305,17 +314,21 @@ public class Car implements Comparable<Car> {
 
     private boolean addDetails(String src) {
         boolean carWasChanged = false;
-        if (description != null && description.equals("big")) {
-            Matcher m = bigDescription.matcher(src);
-            if (m.find()) {
-                description = m.group(1);
-                carWasChanged = true;
-            }
+        Matcher m = bigDescription.matcher(src);
+        if (m.find() && !m.group(1).equals(description)) {
+            description = m.group(1);
+            carWasChanged = true;
         }
         Matcher m2 = townPattern.matcher(src);
         if (m2.find()) {
             town = m2.group(2) == null ? m2.group(4) : m2.group(2);
             carWasChanged = true;
+        }
+        if (region == null || region.equals("null")) {
+            Matcher m22 = regionDetailPattern.matcher(src);
+            if (m22.find()) {
+                region = m22.group(1) == null ? m22.group(2) : m22.group(1);
+            }
         }
         Matcher m3 = contactsPattern.matcher(src);
         if (m3.find()) {
@@ -327,8 +340,7 @@ public class Car implements Comparable<Car> {
             }
             Matcher tel = telPattern.matcher(contacts);
             while (tel.find()) {
-                phones.add(tel.group(1));
-                carWasChanged = true;
+                carWasChanged = phones.add(tel.group(1));
             }
         }
         Matcher photo = photoPattern.matcher(src);
