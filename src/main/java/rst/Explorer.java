@@ -105,6 +105,7 @@ public class Explorer {
             }
             if (System.currentTimeMillis() - start > 7200000) {
                 Car.deepCheck(base, discManager);
+                System.out.println("deepCheck() forced");
                 start = System.currentTimeMillis();
             }
         }

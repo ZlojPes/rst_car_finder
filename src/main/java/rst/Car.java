@@ -54,7 +54,7 @@ public class Car implements Comparable<Car> {
         linkToCarPage = compile("oldcars/.+\\d+\\.html");
         regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
         regionDetailPattern = compile(">(?:([А-Яа-я]+)</a></span>Область)|(?:>Область<.+?>([А-Яа-я]+)</a>)");
-        bigDescription = compile("desc rst-uix-block-more\">\\s*(.+?)\\s*</div>");
+        bigDescription = compile("desc rst-uix-block-more\">(?:\\s*<p><strong>Возможен обмен.</strong> </p>)?\\s*(.+?)\\s*</div>");
         townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
         contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
         namePattern = compile("<strong>(.+)</strong>");
@@ -235,6 +235,7 @@ public class Car implements Comparable<Car> {
         return freshDetected;
     }
 
+
     static Car getCarFromHtml(String carHtml) {
         Car car = new Car();
         String link;
@@ -340,7 +341,9 @@ public class Car implements Comparable<Car> {
             }
             Matcher tel = telPattern.matcher(contacts);
             while (tel.find()) {
-                carWasChanged = phones.add(tel.group(1));
+                if(phones.add(tel.group(1))) {
+                    carWasChanged = true;
+                }
             }
         }
         Matcher photo = photoPattern.matcher(src);
