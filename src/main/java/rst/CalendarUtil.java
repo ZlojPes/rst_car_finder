@@ -7,7 +7,7 @@ import java.util.Date;
 
 class CalendarUtil {
     private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-    private static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+    static DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
 
     private static Date yesterday() {
         final Calendar cal = Calendar.getInstance();

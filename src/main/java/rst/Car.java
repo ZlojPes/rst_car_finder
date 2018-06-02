@@ -1,6 +1,7 @@
 package rst;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,7 +19,6 @@ public class Car implements Comparable<Car> {
     private String engine;
     private int price;
     private int buildYear;
-    private String detectedDate;
     private String description;
     private Set<String> phones;
     private Set<Integer> images;
@@ -27,6 +27,7 @@ public class Car implements Comparable<Car> {
     private boolean exchange;
     private String condition;
     private List<String> comments;
+    private Date firstTimeDetected;
 
     private static final Pattern datePattern;
     private static final Pattern idPattern;
@@ -121,7 +122,12 @@ public class Car implements Comparable<Car> {
     }
 
     void setDetectedDate(String detectedDate) {
-        this.detectedDate = detectedDate;
+//        this.detectedDate = detectedDate;
+        try {
+            firstTimeDetected = CalendarUtil.fullDateFormat.parse(detectedDate);
+        } catch (ParseException e) {
+            System.out.println("Could not recognize the date");
+        }
     }
 
     void setFreshDetected(boolean freshDetected) {
@@ -211,8 +217,13 @@ public class Car implements Comparable<Car> {
         return model;
     }
 
+    boolean isCarAlive() {
+        return new Date().getTime() - firstTimeDetected.getTime() < 86400000L * Integer.parseInt(Explorer.getProp().getProperty("car_alive_days"));
+    }
+
     String getDetectedDate() {
-        return detectedDate;
+        return CalendarUtil.fullDateFormat.format(firstTimeDetected);
+
     }
 
     String getDescription() {
@@ -282,13 +293,15 @@ public class Car implements Comparable<Car> {
         }
         Matcher m6 = datePattern.matcher(carHtml);
         if (m6.find()) {
+            String out;
             if (m6.group().contains("сегодня")) {
-                car.detectedDate = CalendarUtil.getTodayDateString() + " " + m6.group(1);
+                out = CalendarUtil.getTodayDateString() + " " + m6.group(1);
             } else if (m6.group().contains("вчера")) {
-                car.detectedDate = CalendarUtil.getYesterdayDateString() + " " + m6.group(1);
+                out = CalendarUtil.getYesterdayDateString() + " " + m6.group(1);
             } else {
-                car.detectedDate = m6.group(1) + " 00:00";
+                out = m6.group(1) + " 00:00";
             }
+            car.setDetectedDate(out);
         }
         Matcher m7 = regionPattern.matcher(carHtml);
         if (m7.find()) {
@@ -341,7 +354,7 @@ public class Car implements Comparable<Car> {
             }
             Matcher tel = telPattern.matcher(contacts);
             while (tel.find()) {
-                if(phones.add(tel.group(1))) {
+                if (phones.add(tel.group(1))) {
                     carWasChanged = true;
                 }
             }

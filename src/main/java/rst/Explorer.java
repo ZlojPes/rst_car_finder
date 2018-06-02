@@ -38,7 +38,8 @@ public class Explorer {
         System.out.println("\nScanning html");
         int pageNum = 1;
         int topId = 0, markerId = 0;
-        long startCycle, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval")) * 1000;
+        long startCycle, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval_seconds")) * 1000;
+        long deepCheckDelay = Integer.parseInt(prop.getProperty("deep_check_interval_hours")) * 3600000;
         boolean firstCycle = true;
         while (true) {
             startCycle = System.currentTimeMillis();
@@ -56,7 +57,7 @@ public class Explorer {
                         if (carsHtml.indexOf(carHtml) == 0) {
                             topId = id;
                         }
-                        if (markerId == id) {
+                        if (markerId == id || pageNum == 1000) {
                             markerId = topId;
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
@@ -71,7 +72,7 @@ public class Explorer {
                             markerId = topId;
                         }
                         if (!base.containsKey(id)) {
-                            if (!car.isSoldOut()) { //Add car to base
+                            if (!car.isSoldOut() && car.isCarAlive()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 car.addDetails();
                                 discManager.writeCarOnDisc(car, true);
@@ -103,7 +104,7 @@ public class Explorer {
                     System.exit(1);
                 }
             }
-            if (System.currentTimeMillis() - start > 7200000) {
+            if (System.currentTimeMillis() - start > deepCheckDelay) {
                 Car.deepCheck(base, discManager);
                 System.out.println("deepCheck() forced");
                 start = System.currentTimeMillis();
