@@ -84,6 +84,13 @@ class DiscManager {
                             case ("price"):
                                 car.setPrice(Integer.parseInt(value));
                                 break;
+                            case ("mileage"):
+                                try {
+                                    car.setMileage(Integer.parseInt(value));
+                                } catch (NumberFormatException e) {
+                                    car.setMileage(0);
+                                }
+                                break;
                             case ("exchange"):
                                 car.setExchange(Boolean.valueOf(value));
                                 break;
@@ -119,7 +126,7 @@ class DiscManager {
                                 car.setLink(value);
                                 break;
                             case ("comment"):
-                                car.getComments().add(value);
+                                car.addComment(value);
                                 break;
                         }
                     }
@@ -146,6 +153,7 @@ class DiscManager {
                 writer.println("engine=\"" + car.getEngine() + "\"");
                 writer.println("buildYear=\"" + car.getBuildYear() + "\"");
                 writer.println("price=\"" + car.getPrice() + "\"");
+                writer.println("mileage=\"" + car.getMileage() + "\"");
                 writer.println("exchange=\"" + car.isExchange() + "\"");
                 writer.println("region=\"" + car.getRegion() + "\"");
                 writer.println("town=\"" + car.getTown() + "\"");
@@ -161,6 +169,7 @@ class DiscManager {
                     writer.print("comment=\"" + comment + "\"");
                 }
                 writer.flush();
+                System.out.print("'w'");
             } catch (IOException e) {
                 e.printStackTrace();
             }

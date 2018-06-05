@@ -7,7 +7,7 @@ import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-public class Mail {
+class Mail {
     private static Properties prop = Explorer.getProp();
 
     static void sendCar(Car car) {
@@ -37,7 +37,7 @@ public class Mail {
         final String password = prop.getProperty("password");
         final String toEmail = prop.getProperty("to_email");
 
-        System.out.println("SSLEmail Start");
+//        System.out.println("SSLEmail Start");
         Properties props = new Properties();
         props.put("mail.smtp.host", prop.getProperty("smtp_host")); //SMTP Host
         props.put("mail.smtp.socketFactory.port", prop.getProperty("ssl_port")); //SSL Port
@@ -54,7 +54,7 @@ public class Mail {
         };
 
         Session session = Session.getDefaultInstance(props, auth);
-        System.out.println("Session created");
+//        System.out.println("Session created");
         sendEmail(session, toEmail, subject, message);
     }
 
@@ -70,16 +70,12 @@ public class Mail {
             msg.setText(body, "UTF-8");
             msg.setSentDate(new Date());
             msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail, false));
-            System.out.println("Message is ready");
+//            System.out.println("Message is ready");
             Transport.send(msg);
             System.out.println("EMail Sent Successfully!!");
         } catch (Exception e) {
             System.out.println("EMail Sent failed!!");
             e.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) {
-        alarmByEmail("test", "Test sending message\nПроверка кириллицы");
     }
 }

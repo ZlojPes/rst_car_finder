@@ -28,41 +28,44 @@ public class Car implements Comparable<Car> {
     private String condition;
     private List<String> comments;
     private Date firstTimeDetected;
+    private int mileage;
 
-    private static final Pattern datePattern;
-    private static final Pattern idPattern;
-    private static final Pattern pricePattern;
-    private static final Pattern buildYearPattern;
-    private static final Pattern descriptionPattern;
-    private static final Pattern linkToCarPage;
-    private static final Pattern regionPattern;
-    private static final Pattern regionDetailPattern;
-    private static final Pattern bigDescription;
-    private static final Pattern townPattern;
-    private static final Pattern contactsPattern;
-    private static final Pattern namePattern;
-    private static final Pattern telPattern;
-    private static final Pattern photoPattern;
-    private static final Pattern enginePattern;
-    private static final Pattern conditionPattern;
+    private static final Pattern DATE_PATTERN;
+    private static final Pattern ID_PATTERN;
+    private static final Pattern PRICE_PATTERN;
+    private static final Pattern BUILD_YEAR_PATTERN;
+    private static final Pattern DESCRIPTION_PATTERN;
+    private static final Pattern LINK_TO_CAR_PAGE;
+    private static final Pattern REGION_PATTERN;
+    private static final Pattern REGION_DETAIL_PATTERN;
+    private static final Pattern BIG_DESCRIPTION;
+    private static final Pattern TOWN_PATTERN;
+    private static final Pattern CONTACTS_PATTERN;
+    private static final Pattern NAME_PATTERN;
+    private static final Pattern TEL_PATTERN;
+    private static final Pattern PHOTO_PATTERN;
+    private static final Pattern ENGINE_PATTERN;
+    private static final Pattern CONDITION_PATTERN;
+    private static final Pattern MILEAGE_PATTERN;
 
     static {
-        datePattern = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
-        idPattern = compile("\\d{7,}\\.html$");
-        pricePattern = compile("данные НБУ\">\\$(\\d{0,3}'?\\d{3})</span>");
-        buildYearPattern = compile("d-l-i-s\">(\\d{4})");
-        descriptionPattern = compile("-d-d\">(.*?)</div>");
-        linkToCarPage = compile("oldcars/.+\\d+\\.html");
-        regionPattern = compile("Область:.+?>([А-Яа-я]+?)</span>");
-        regionDetailPattern = compile(">(?:([А-Яа-я]+)</a></span>Область)|(?:>Область<.+?>([А-Яа-я]+)</a>)");
-        bigDescription = compile("desc rst-uix-block-more\">(?:\\s*<p><strong>Возможен обмен.</strong> </p>)?\\s*(.+?)\\s*</div>");
-        townPattern = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
-        contactsPattern = compile("<h3>Контакты:</h3.+?</div></div>");
-        namePattern = compile("<strong>(.+)</strong>");
-        telPattern = compile("тел\\.: <a href=\"tel:(\\d{10})");
-        photoPattern = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
-        enginePattern = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
-        conditionPattern = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
+        DATE_PATTERN = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
+        ID_PATTERN = compile("\\d{7,}\\.html$");
+        PRICE_PATTERN = compile("данные НБУ\">\\$(\\d{0,3}'?\\d{3})</span>");
+        BUILD_YEAR_PATTERN = compile("d-l-i-s\">(\\d{4})");
+        DESCRIPTION_PATTERN = compile("-d-d\">(.*?)</div>");
+        LINK_TO_CAR_PAGE = compile("oldcars/.+\\d+\\.html");
+        REGION_PATTERN = compile("Область:.+?>([А-Яа-я]+?)</span>");
+        REGION_DETAIL_PATTERN = compile(">(?:([А-Яа-я]+)</a></span>Область)|(?:>Область<.+?>([А-Яа-я]+)</a>)");
+        BIG_DESCRIPTION = compile("desc rst-uix-block-more\">(?:\\s*<p><strong>Возможен обмен.</strong> </p>)?\\s*(.+?)\\s*</div>");
+        TOWN_PATTERN = compile("(\">(\\D+?)</a></span>Город<)|(Город</td>.+?title=\".*?авто.*?\">(\\D+?)</a>)");
+        CONTACTS_PATTERN = compile("<h3>Контакты:</h3.+?</div></div>");
+        NAME_PATTERN = compile("<strong>(.+)</strong>");
+        TEL_PATTERN = compile("тел\\.: <a href=\"tel:(\\d{10})");
+        PHOTO_PATTERN = compile("var photos = \\[((?:\\d\\d?(?:, )?)+?)];");
+        ENGINE_PATTERN = compile("Двиг\\.:.{32}>(\\d\\.\\d)</span>\\s(.{6,10})\\s\\(.{30}\">(.{7,12})</.{6}</li>");
+        CONDITION_PATTERN = compile("Состояние:\\s<span class=\"rst-ocb-i-d-l-i-s\">(.+?)</span>");
+        MILEAGE_PATTERN = compile(">\\d{4}</span>,\\s\\((\\d+)\\s-\\sпробег\\)");
     }
 
     Car() {
@@ -70,8 +73,6 @@ public class Car implements Comparable<Car> {
         phones = new HashSet<>();
         images = new LinkedHashSet<>();
     }
-
-    //Старое описание: <p><strong>Возможен обмен.</strong> </p>Требуется покраски машина люкс 31.05.2018 15:26:37 - 8314631
 
     int getPrice() {
         return price;
@@ -91,6 +92,14 @@ public class Car implements Comparable<Car> {
 
     int getBuildYear() {
         return buildYear;
+    }
+
+    int getMileage() {
+        return mileage;
+    }
+
+    void setMileage(int mileage) {
+        this.mileage = mileage;
     }
 
     void setId(int id) {
@@ -122,7 +131,6 @@ public class Car implements Comparable<Car> {
     }
 
     void setDetectedDate(String detectedDate) {
-//        this.detectedDate = detectedDate;
         try {
             firstTimeDetected = CalendarUtil.fullDateFormat.parse(detectedDate);
         } catch (ParseException e) {
@@ -199,12 +207,17 @@ public class Car implements Comparable<Car> {
         }
     }
 
+    void addComment(String comment) {
+        comments.add(comment);
+    }
+
     String[] getPhones() {
         Iterator<String> iterator = phones.iterator();
         String[] out = new String[phones.size()];
         int counter = 0;
         while (iterator.hasNext()) {
             out[counter] = iterator.next();
+            counter++;
         }
         return out;
     }
@@ -250,7 +263,7 @@ public class Car implements Comparable<Car> {
     static Car getCarFromHtml(String carHtml) {
         Car car = new Car();
         String link;
-        Matcher m = linkToCarPage.matcher(carHtml);
+        Matcher m = LINK_TO_CAR_PAGE.matcher(carHtml);
         if (m.find()) {
             link = m.group();
             car.link = link;
@@ -260,7 +273,7 @@ public class Car implements Comparable<Car> {
         } else {
             return null;
         }
-        Matcher m2 = idPattern.matcher(link);
+        Matcher m2 = ID_PATTERN.matcher(link);
         if (m2.find()) {
             String ids = m2.group();
             car.id = Integer.parseInt(ids.substring(0, ids.length() - 5));
@@ -268,7 +281,7 @@ public class Car implements Comparable<Car> {
         car.isSoldOut = carHtml.contains("Уже ПРОДАНО");
         car.freshDetected = carHtml.contains("rst-ocb-i-s-fresh");
         car.exchange = carHtml.contains("ocb-i-exchange");
-        Matcher m3 = pricePattern.matcher(carHtml);
+        Matcher m3 = PRICE_PATTERN.matcher(carHtml);
         if (m3.find()) {
             char[] priceArray = m3.group(1).toCharArray();
             StringBuilder sb = new StringBuilder();
@@ -279,11 +292,11 @@ public class Car implements Comparable<Car> {
             }
             car.price = Integer.parseInt(sb.toString());
         }
-        Matcher m4 = buildYearPattern.matcher(carHtml);
+        Matcher m4 = BUILD_YEAR_PATTERN.matcher(carHtml);
         if (m4.find()) {
             car.buildYear = Integer.parseInt(m4.group(1));
         }
-        Matcher m5 = descriptionPattern.matcher(carHtml);
+        Matcher m5 = DESCRIPTION_PATTERN.matcher(carHtml);
         if (m5.find()) {
             String desc = m5.group(1);
             if (desc.length() == 120) {
@@ -291,7 +304,7 @@ public class Car implements Comparable<Car> {
             }
             car.description = desc;
         }
-        Matcher m6 = datePattern.matcher(carHtml);
+        Matcher m6 = DATE_PATTERN.matcher(carHtml);
         if (m6.find()) {
             String out;
             if (m6.group().contains("сегодня")) {
@@ -303,63 +316,82 @@ public class Car implements Comparable<Car> {
             }
             car.setDetectedDate(out);
         }
-        Matcher m7 = regionPattern.matcher(carHtml);
+        Matcher m7 = REGION_PATTERN.matcher(carHtml);
         if (m7.find()) {
             car.region = m7.group(1);
         }
-        Matcher m8 = enginePattern.matcher(carHtml);
+        Matcher m8 = ENGINE_PATTERN.matcher(carHtml);
         if (m8.find()) {
             car.engine = m8.group(1) + "-" + m8.group(2) + "-" + m8.group(3);
         }
-        Matcher m9 = conditionPattern.matcher(carHtml);
+        Matcher m9 = CONDITION_PATTERN.matcher(carHtml);
         if (m9.find()) {
             car.condition = m9.group(1);
+        }
+        Matcher m10 = MILEAGE_PATTERN.matcher(carHtml);
+        if (m10.find()) {
+            try {
+                car.setMileage(Integer.parseInt(m10.group(1)));
+            } catch (NumberFormatException e) {
+                System.out.println("ME");// Mileage Error
+            }
         }
         return car;
     }
 
     void addDetails() {
         try {
-            addDetails(HtmlGetter.getURLSource("http://m.rst.ua/" + link));
+            addDetails(HtmlGetter.getURLSource("http://m.rst.ua/" + link), false);
         } catch (IOException e) {
             System.out.println("Cannot add detail to car " + id + ". Error:" + e.getMessage());
         }
     }
 
-    private boolean addDetails(String src) {
+    boolean addDetails(String src, boolean writeCommentIfChanged) {
         boolean carWasChanged = false;
-        Matcher m = bigDescription.matcher(src);
+        Matcher m = BIG_DESCRIPTION.matcher(src);
         if (m.find() && !m.group(1).equals(description)) {
             description = m.group(1);
+            if (writeCommentIfChanged) {
+                addComment("Старое описание: " + description + " " + CalendarUtil.getTimeStamp());
+            }
             carWasChanged = true;
         }
-        Matcher m2 = townPattern.matcher(src);
-        if (m2.find()) {
-            town = m2.group(2) == null ? m2.group(4) : m2.group(2);
-            carWasChanged = true;
+        if (town == null || town.equals("null")) {
+            Matcher m2 = TOWN_PATTERN.matcher(src);
+            if (m2.find()) {
+                town = m2.group(2) == null ? m2.group(4) : m2.group(2);
+                carWasChanged = true;
+            }
         }
         if (region == null || region.equals("null")) {
-            Matcher m22 = regionDetailPattern.matcher(src);
+            Matcher m22 = REGION_DETAIL_PATTERN.matcher(src);
             if (m22.find()) {
                 region = m22.group(1) == null ? m22.group(2) : m22.group(1);
             }
         }
-        Matcher m3 = contactsPattern.matcher(src);
+        Matcher m3 = CONTACTS_PATTERN.matcher(src);
         if (m3.find()) {
             String contacts = m3.group();
-            Matcher name = namePattern.matcher(contacts);
+            Matcher name = NAME_PATTERN.matcher(contacts);
             if (name.find() && !name.group(1).equals(ownerName)) {
+                if (writeCommentIfChanged) {
+                    addComment("Старое имя продавца: " + ownerName + " " + CalendarUtil.getTimeStamp());
+                }
                 ownerName = name.group(1);
                 carWasChanged = true;
             }
-            Matcher tel = telPattern.matcher(contacts);
+            Matcher tel = TEL_PATTERN.matcher(contacts);
             while (tel.find()) {
                 if (phones.add(tel.group(1))) {
                     carWasChanged = true;
+                    if (writeCommentIfChanged) {
+                        addComment("Добавлен телефон: " + tel.group(1) + " " + CalendarUtil.getTimeStamp());
+                    }
                 }
             }
         }
-        Matcher photo = photoPattern.matcher(src);
+        Matcher photo = PHOTO_PATTERN.matcher(src);
         if (photo.find()) {
             String[] ar = photo.group(1).split(", ");
             if (ar.length > 0) {
@@ -374,38 +406,13 @@ public class Car implements Comparable<Car> {
                 if (list.size() > 0) {
                     new ImageGetter().downloadImages(this, list);
                     carWasChanged = true;
+                    if (writeCommentIfChanged) {
+                        addComment("Добавлены фото: " + list + " " + CalendarUtil.getTimeStamp());
+                    }
                 }
             }
         }
         return carWasChanged;
-    }
-
-    static void deepCheck(Map<Integer, Car> base, DiscManager discManager) {
-        Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
-        Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, Car> entry = iterator.next();
-            Car car = entry.getValue();
-            boolean carWasChanged;
-            try {
-                String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
-                if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
-                    car.setSoldOut();
-                    String comment = "Объявление удалено! Время отметки: " + CalendarUtil.getTimeStamp();
-                    car.getComments().add(comment);
-                    System.out.println("\n(" + car.getId() + ")Объявление удалено!");
-                    iterator.remove();
-                    carWasChanged = true;
-                } else {
-                    carWasChanged = car.addDetails(src);
-                }
-                if (carWasChanged) {
-                    discManager.writeCarOnDisc(car, false);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override

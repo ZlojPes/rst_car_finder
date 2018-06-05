@@ -33,7 +33,7 @@ public class Explorer {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
         if (discManager.initBaseFromDisc(base)) {
-            Car.deepCheck(base, discManager);
+            deepCheck(false);
         }
         System.out.println("\nScanning html");
         int pageNum = 1;
@@ -105,44 +105,74 @@ public class Explorer {
                 }
             }
             if (System.currentTimeMillis() - start > deepCheckDelay) {
-                Car.deepCheck(base, discManager);
+                deepCheck(true);
                 System.out.println("deepCheck() forced");
                 start = System.currentTimeMillis();
             }
         }
     }
 
-    private void checkCarForUpdates(Car car, boolean sendEmail) {
-        Car oldCar = base.get(car.getId());
+    private void checkCarForUpdates(Car carFromSite, boolean sendEmail) {
+        Car carFromBase = base.get(carFromSite.getId());
         boolean hasChanges = false;
-
-        if (oldCar.getPrice() != car.getPrice()) {
+        if (carFromBase.getPrice() != carFromSite.getPrice()) {
             hasChanges = true;
-            String comment = "Цена изменена с " + oldCar.getPrice() + "$ на " + car.getPrice() + "$ " + CalendarUtil.getTimeStamp();
-            oldCar.getComments().add(comment);
-            oldCar.setPrice(car.getPrice());
-            System.out.print(comment + " - " + car.getId());
+            String comment = "Цена изменена с " + carFromBase.getPrice() + "$ на " + carFromSite.getPrice() + "$ " + CalendarUtil.getTimeStamp();
+            carFromBase.addComment(comment);
+            carFromBase.setPrice(carFromSite.getPrice());
+            System.out.print(comment + " - " + carFromSite.getId());
         }
-        String desc = car.getDescription(), oldDesc = oldCar.getDescription();
+        String desc = carFromSite.getDescription(), oldDesc = carFromBase.getDescription();
         if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
             hasChanges = true;
-            String comment = "Старое описание: " + oldCar.getDescription() + " " + CalendarUtil.getTimeStamp();
-            oldCar.getComments().add(comment);
-            oldCar.setDescription(car.getDescription());
-            System.out.print(comment + " - " + car.getId());
+            String comment = "Старое описание: " + carFromBase.getDescription() + " " + CalendarUtil.getTimeStamp();
+            carFromBase.addComment(comment);
+            carFromBase.setDescription(carFromSite.getDescription());
+            System.out.print("description changed (" + carFromSite.getId() + ")");
         }
-        if (car.isSoldOut()) {
+        if (carFromSite.isSoldOut()) {
             hasChanges = true;
-            oldCar.setSoldOut();
-            base.remove(oldCar.getId());
+            carFromBase.setSoldOut();
+            base.remove(carFromBase.getId());
             String comment = "Автомобиль продан! Время отметки: " + CalendarUtil.getTimeStamp();
-            oldCar.getComments().add(comment);
-            System.out.println("\n(" + car.getId() + ")Автомобиль продан!");
+            carFromBase.addComment(comment);
+            System.out.println("\n(" + carFromSite.getId() + ")Автомобиль продан!");
         }
         if (hasChanges) {
-            discManager.writeCarOnDisc(oldCar, false);
+            discManager.writeCarOnDisc(carFromBase, false);
             if (sendEmail) {
-                Mail.sendCar("Изменения в авто!", oldCar, "см. изменения в комментариях");
+                Mail.sendCar("Изменения в авто!", carFromBase, "см. изменения в комментариях");
+            }
+        }
+    }
+
+    private void deepCheck(boolean sendMail) {
+        Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
+        Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, Car> entry = iterator.next();
+            Car car = entry.getValue();
+            boolean carWasChanged;
+            try {
+                String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
+                if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
+                    car.setSoldOut();
+                    String comment = "Объявление удалено! Время отметки: " + CalendarUtil.getTimeStamp();
+                    car.addComment(comment);
+                    System.out.println("\n(" + car.getId() + ")Объявление удалено!");
+                    iterator.remove();
+                    carWasChanged = true;
+                } else {
+                    carWasChanged = car.addDetails(src, true);
+                }
+                if (carWasChanged) {
+                    discManager.writeCarOnDisc(car, false);
+                    if (sendMail) {
+                        Mail.sendCar("Изменения в авто!", car, "см. изменения в комментариях");
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
