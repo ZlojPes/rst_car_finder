@@ -19,12 +19,12 @@ class Mail {
             subject = "Обнаружено новое авто!";
         }
         StringBuilder body = new StringBuilder().append("Марка: ").append(car.getBrand()).append("\nМодель: ").append(car.getModel())
-                .append("\nЦена: ").append(car.getPrice()).append("$\nГод: ").append(car.getBuildYear()).append("\nСвежее: ")
-                .append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ")
-                .append(car.getRegion()).append("\nГород: ").append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет")
-                .append("\nописание: ").append(car.getDescription()).append("\nИмя:").append(car.getOwnerName())
-                .append(" - ").append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "").append("\nhttp://rst.ua/")
-                .append(car.getLink()).append("\nКомментарии:");
+                .append("\nЦена: ").append(car.getPrice()).append("$\nГод: ").append(car.getBuildYear()).append("\nПробег: ")
+                .append(car.getMileage()).append("\nСвежее: ").append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ")
+                .append(car.getEngine()).append("\nРегион: ").append(car.getRegion()).append("\nГород: ").append(car.getTown())
+                .append("\nОбмен: ").append(car.isExchange() ? "да" : "нет").append("\nописание: ").append(car.getDescription())
+                .append("\nИмя:").append(car.getOwnerName()).append(" - ").append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "")
+                .append("\nhttp://rst.ua/").append(car.getLink()).append("\nКомментарии:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);
         }

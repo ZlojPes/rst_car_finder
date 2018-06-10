@@ -11,7 +11,6 @@ import static java.util.regex.Pattern.compile;
 
 public class Explorer {
     private Map<Integer, Car> base;
-    private DiscManager discManager;
     private Pattern carHtmlBlock;
     private static Properties prop;
 //    private Pattern mainPhotoPattern;
@@ -25,14 +24,13 @@ public class Explorer {
     private Explorer() {
         carHtmlBlock = compile("<a class=\"rst-ocb-i-a\" href=\".*?\\d\\d</div></div>");
         base = new HashMap<>();
-        discManager = new DiscManager();
 //        mainPhotoPattern = compile("-i-i\".+?src=\"(.+?)\"><h3"); //no-photo.png
     }
 
     private void go() {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
-        if (discManager.initBaseFromDisc(base)) {
+        if (DiscManager.initBaseFromDisc(base)) {
             deepCheck(false);
         }
         System.out.println("\nScanning html");
@@ -75,7 +73,7 @@ public class Explorer {
                             if (!car.isSoldOut() && car.isCarAlive()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 car.addDetails();
-                                discManager.writeCarOnDisc(car, true);
+                                DiscManager.writeCarOnDisc(car, true);
                                 base.put(id, car);
                                 report(car);
                                 if (!firstCycle) {
@@ -103,10 +101,15 @@ public class Explorer {
                     Mail.alarmByEmail("Ahtung!!!", "Всё пропало!\n403 FORBIDDEN!");
                     System.exit(1);
                 }
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e1) {
+                    System.out.println("TO");
+                }
             }
             if (System.currentTimeMillis() - start > deepCheckDelay) {
+                System.out.print("deepCheck() forced");
                 deepCheck(true);
-                System.out.println("deepCheck() forced");
                 start = System.currentTimeMillis();
             }
         }
@@ -120,7 +123,7 @@ public class Explorer {
             String comment = "Цена изменена с " + carFromBase.getPrice() + "$ на " + carFromSite.getPrice() + "$ " + CalendarUtil.getTimeStamp();
             carFromBase.addComment(comment);
             carFromBase.setPrice(carFromSite.getPrice());
-            System.out.print(comment + " - " + carFromSite.getId());
+            System.out.print("\n" + comment + " - " + carFromSite.getId());
         }
         String desc = carFromSite.getDescription(), oldDesc = carFromBase.getDescription();
         if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
@@ -128,7 +131,7 @@ public class Explorer {
             String comment = "Старое описание: " + carFromBase.getDescription() + " " + CalendarUtil.getTimeStamp();
             carFromBase.addComment(comment);
             carFromBase.setDescription(carFromSite.getDescription());
-            System.out.print("description changed (" + carFromSite.getId() + ")");
+            System.out.println("\n" + "description changed (" + carFromSite.getId() + ")");
         }
         if (carFromSite.isSoldOut()) {
             hasChanges = true;
@@ -139,7 +142,7 @@ public class Explorer {
             System.out.println("\n(" + carFromSite.getId() + ")Автомобиль продан!");
         }
         if (hasChanges) {
-            discManager.writeCarOnDisc(carFromBase, false);
+            DiscManager.writeCarOnDisc(carFromBase, false);
             if (sendEmail) {
                 Mail.sendCar("Изменения в авто!", carFromBase, "см. изменения в комментариях");
             }
@@ -166,7 +169,7 @@ public class Explorer {
                     carWasChanged = car.addDetails(src, true);
                 }
                 if (carWasChanged) {
-                    discManager.writeCarOnDisc(car, false);
+                    DiscManager.writeCarOnDisc(car, false);
                     if (sendMail) {
                         Mail.sendCar("Изменения в авто!", car, "см. изменения в комментариях");
                     }

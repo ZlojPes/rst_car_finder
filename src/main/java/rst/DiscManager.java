@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,11 +24,11 @@ class DiscManager {
         }
     }
 
-    private File mainDir = new File(mainPath);
-    private Pattern prefixPattern = Pattern.compile("^\\D{4,15}=");
+    private static File mainDir = new File(mainPath);
+    private static Pattern prefixPattern = Pattern.compile("^(\\D{4,15})=");
 
 
-    boolean initBaseFromDisc(Map<Integer, Car> base) {
+    static boolean initBaseFromDisc(Map<Integer, Car> base) {
         if (mainDir.exists()) {
             System.out.print("Reading base from disc (" + mainPath + ")");
         } else {
@@ -51,15 +52,15 @@ class DiscManager {
                     continue;
                 }
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                        mainPath + "\\" + folder + "\\" + "data.txt"), "UTF-8"))) {
-                    String line, prefix = "", value;
+                        mainPath + "\\" + folder + "\\data.txt"), "UTF-8"))) {
+                    String line, value, prefix = "";
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
                             continue;
                         }
-                        Matcher pr = prefixPattern.matcher(line);
-                        if (pr.find()) {
-                            prefix = pr.group().substring(0, pr.group().length() - 1);
+                        Matcher pref = prefixPattern.matcher(line);
+                        if (pref.find()) {
+                            prefix = pref.group(1);
                         }
                         switch (prefix) {
                             case ("isSoldOut"):
@@ -142,7 +143,7 @@ class DiscManager {
         return true;
     }
 
-    void writeCarOnDisc(Car car, boolean createFolder) {
+    static void writeCarOnDisc(Car car, boolean createFolder) {
         String path = mainPath + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
         if (!createFolder || new File(path).mkdir()) {
             try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path + "\\data.txt"), StandardCharsets.UTF_8))) {
@@ -176,12 +177,66 @@ class DiscManager {
         }
     }
 
+    static void writeSellersBase(List<Seller> sellersBase) {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers.txt"), StandardCharsets.UTF_8))) {
+            for (Seller seller : sellersBase) {
+                writer.println("phones=\"" + String.join(", ", seller.getPhones()) + "\"");
+                writer.println("names=\"" + String.join(", ", seller.getNames()) + "\"");
+                for (String link : seller.getLinks()) {
+                    writer.println("link=\"" + link + "\"");
+                }
+                writer.println("********************");
+            }
+            writer.flush();
+            System.out.print("'ws'");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static void readSellersBase(List<Seller> sellersBase) {
+        if (!new File(mainDir + "\\sellers.txt").exists()) {
+            System.out.println("There's no sellers base!");
+            return;
+        }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
+                mainPath + "\\sellers.txt"), "UTF-8"))) {
+            String line, value, prefix = "";
+            Seller seller = new Seller();
+            while ((line = reader.readLine()) != null) {
+                if ((value = getValue(line)) == null) {
+                    return;
+                }
+                if (value.equals("********************")) {
+                    sellersBase.add(seller);
+                    seller = new Seller();
+                }
+                Matcher pref = prefixPattern.matcher(line);
+                if (pref.find()) {
+                    prefix = pref.group(1);
+                }
+                switch (prefix) {
+                    case ("phones"):
+                        seller.setPhones(value.split(", "));
+                        break;
+                    case ("names"):
+                        seller.setNames(value.split(", "));
+                        break;
+                    case ("link"):
+                        seller.setLink(value);
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error happens during sellers base initialisation!");
+        }
+    }
+
     private static String getValue(String line) {
-        Pattern value = compile("\".+\"$");
+        Pattern value = compile("\"(.+)\"$");
         Matcher m = value.matcher(line);
         if (m.find()) {
-            String result = m.group();
-            return result.substring(1, result.length() - 1);
+            return m.group(1);
         }
         return null;
     }

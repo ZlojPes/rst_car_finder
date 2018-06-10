@@ -36,7 +36,7 @@ public class HtmlGetter {
         try {
             result = future.get(10, TimeUnit.SECONDS);
         } catch (TimeoutException ex) {
-            System.out.print("Timeout");
+            System.out.print("TimeOut");
         } catch (InterruptedException e) {
             System.out.print("InterruptedException");
         } catch (ExecutionException e) {

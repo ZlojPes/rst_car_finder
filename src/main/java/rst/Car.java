@@ -351,10 +351,10 @@ public class Car implements Comparable<Car> {
         boolean carWasChanged = false;
         Matcher m = BIG_DESCRIPTION.matcher(src);
         if (m.find() && !m.group(1).equals(description)) {
-            description = m.group(1);
             if (writeCommentIfChanged) {
                 addComment("Старое описание: " + description + " " + CalendarUtil.getTimeStamp());
             }
+            description = m.group(1);
             carWasChanged = true;
         }
         if (town == null || town.equals("null")) {
