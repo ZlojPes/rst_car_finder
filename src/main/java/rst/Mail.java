@@ -11,24 +11,21 @@ class Mail {
     private static Properties prop = Explorer.getProp();
 
     static void sendCar(Car car) {
-        sendCar(null, car, null);
+        sendCar("Обнаружено новое авто!", car, "Краткое описание:");
     }
 
     static void sendCar(String subject, Car car, String message) {
-        if (subject == null) {
-            subject = "Обнаружено новое авто!";
-        }
-        StringBuilder body = new StringBuilder().append("Марка: ").append(car.getBrand()).append("\nМодель: ").append(car.getModel())
+        StringBuilder body = new StringBuilder().append(message).append("\nМарка: ").append(car.getBrand()).append("\nМодель: ").append(car.getModel())
                 .append("\nЦена: ").append(car.getPrice()).append("$\nГод: ").append(car.getBuildYear()).append("\nПробег: ")
-                .append(car.getMileage()).append("\nСвежее: ").append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ")
-                .append(car.getEngine()).append("\nРегион: ").append(car.getRegion()).append("\nГород: ").append(car.getTown())
-                .append("\nОбмен: ").append(car.isExchange() ? "да" : "нет").append("\nописание: ").append(car.getDescription())
-                .append("\nИмя:").append(car.getOwnerName()).append(" - ").append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "")
-                .append("\nhttp://rst.ua/").append(car.getLink()).append("\nКомментарии:");
+                .append(car.getMileage()).append("\nДобавлен:").append(car.getDetectedDate()).append("\nДобавлен свежим: ")
+                .append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ")
+                .append(car.getRegion()).append("\nГород: ").append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет")
+                .append("\nописание: ").append(car.getDescription()).append("\nИмя:").append(car.getOwnerName()).append(" - ")
+                .append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "").append("\nhttp://rst.ua/").append(car.getLink())
+                .append("\nИстория изменений:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);
         }
-        body.append("\n").append(message);
         alarmByEmail(subject, body.toString());
     }
 
@@ -37,12 +34,10 @@ class Mail {
         final String password = prop.getProperty("password");
         final String toEmail = prop.getProperty("to_email");
 
-//        System.out.println("SSLEmail Start");
         Properties props = new Properties();
         props.put("mail.smtp.host", prop.getProperty("smtp_host")); //SMTP Host
         props.put("mail.smtp.socketFactory.port", prop.getProperty("ssl_port")); //SSL Port
-        props.put("mail.smtp.socketFactory.class",
-                "javax.net.ssl.SSLSocketFactory"); //SSL Factory Class
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); //SSL Factory Class
         props.put("mail.smtp.auth", "true"); //Enabling SMTP Authentication
         props.put("mail.smtp.port", prop.getProperty("smtp_port")); //SMTP Port
 
@@ -54,7 +49,6 @@ class Mail {
         };
 
         Session session = Session.getDefaultInstance(props, auth);
-//        System.out.println("Session created");
         sendEmail(session, toEmail, subject, message);
     }
 
@@ -70,7 +64,6 @@ class Mail {
             msg.setText(body, "UTF-8");
             msg.setSentDate(new Date());
             msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail, false));
-//            System.out.println("Message is ready");
             Transport.send(msg);
             System.out.println("EMail Sent Successfully!!");
         } catch (Exception e) {

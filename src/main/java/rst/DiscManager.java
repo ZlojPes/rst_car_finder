@@ -133,6 +133,7 @@ class DiscManager {
                     }
                     System.out.print(".");
                     base.put(car.getId(), car);
+//                    Seller.isUniqueSeller(car);
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("Error happens during base initialisation!");
@@ -177,8 +178,9 @@ class DiscManager {
         }
     }
 
-    static void writeSellersBase(List<Seller> sellersBase) {
-        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers.txt"), StandardCharsets.UTF_8))) {
+    static void writeSellersBase() {
+        List<Seller> sellersBase = Seller.getSellersBase();
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers2.txt"), StandardCharsets.UTF_8))) {
             for (Seller seller : sellersBase) {
                 writer.println("phones=\"" + String.join(", ", seller.getPhones()) + "\"");
                 writer.println("names=\"" + String.join(", ", seller.getNames()) + "\"");
@@ -204,10 +206,11 @@ class DiscManager {
             String line, value, prefix = "";
             Seller seller = new Seller();
             while ((line = reader.readLine()) != null) {
+                System.out.println(line);
                 if ((value = getValue(line)) == null) {
                     return;
                 }
-                if (value.equals("********************")) {
+                if (line.equals("********************")) {
                     sellersBase.add(seller);
                     seller = new Seller();
                 }
