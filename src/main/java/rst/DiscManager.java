@@ -133,7 +133,7 @@ class DiscManager {
                     }
                     System.out.print(".");
                     base.put(car.getId(), car);
-//                    Seller.isUniqueSeller(car);
+                    Seller.isUniqueSeller(car);
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("Error happens during base initialisation!");
@@ -207,12 +207,16 @@ class DiscManager {
             Seller seller = new Seller();
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
-                if ((value = getValue(line)) == null) {
-                    return;
-                }
+                value = getValue(line);
+//                if ((value = getValue(line)) == null) {
+//                    return;
+//                }
                 if (line.equals("********************")) {
                     sellersBase.add(seller);
                     seller = new Seller();
+                }
+                if(value == null) {
+                    continue;
                 }
                 Matcher pref = prefixPattern.matcher(line);
                 if (pref.find()) {

@@ -31,10 +31,9 @@ public class Explorer {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
         if (DiscManager.initBaseFromDisc(base)) {
-            System.out.println(Seller.getSellersBase().size());
             DiscManager.writeSellersBase();
             System.exit(0);
-//            deepCheck(false);
+            deepCheck(false);
         }
         System.out.print("\nScanning html");
         int pageNum = 1;
