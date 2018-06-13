@@ -32,7 +32,6 @@ public class Explorer {
         String startUrl = prop.getProperty("start_url");
         if (DiscManager.initBaseFromDisc(base)) {
             DiscManager.writeSellersBase();
-            System.exit(0);
             deepCheck(false);
         }
         System.out.print("\nScanning html");
@@ -75,7 +74,9 @@ public class Explorer {
                             if (!car.isSoldOut() && car.isCarAlive()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 car.addDetails();
+                                Seller.addUniqueSeller(car);
                                 DiscManager.writeCarOnDisc(car, true);
+                                DiscManager.writeSellersBase();
                                 base.put(id, car);
                                 report(car);
                                 if (!firstCycle) {
@@ -156,6 +157,7 @@ public class Explorer {
     }
 
     private void deepCheck(boolean sendMail) {
+        int sellerBaseHash = Seller.getBaseHash();
         Set<Map.Entry<Integer, Car>> entrySet = base.entrySet();
         Iterator<Map.Entry<Integer, Car>> iterator = entrySet.iterator();
         while (iterator.hasNext()) {
@@ -176,12 +178,16 @@ public class Explorer {
                 }
                 if (carWasChanged) {
                     DiscManager.writeCarOnDisc(car, false);
+                    Seller.addUniqueSeller(car);
                     if (sendMail) {
                         Mail.sendCar("Изменения в авто!", car, "(см. историю изменений)");
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+            if (sellerBaseHash != Seller.getBaseHash()) {
+                DiscManager.writeSellersBase();
             }
         }
     }

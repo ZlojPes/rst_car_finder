@@ -19,12 +19,25 @@ class Seller {
         links = new HashSet<>();
     }
 
-    static boolean isUniqueSeller(Car car) {
+    static void addUniqueSeller(Seller seller) {
+        addSeller(seller.phones, seller.names, seller.links);
+    }
+
+    static void addUniqueSeller(Car car) {
+        Set<String> phones = new HashSet<>(Arrays.asList(car.getPhones()));
+        Set<String> names = new HashSet<>();
+        names.add(car.getOwnerName());
+        Set<String> links = new HashSet<>();
+        links.add("http://rst.ua/" + car.getLink());
+        addSeller(phones, names, links);
+    }
+
+    private static void addSeller(Set<String> phones, Set<String> names, Set<String> links) {
         boolean out = true;
         Seller outputSeller = null;
         exit:
         for (Seller seller : sellersBase) {
-            for (String phone : car.getPhones()) {
+            for (String phone : phones) {
                 if (seller.phones.contains(phone)) {
                     outputSeller = seller;
                     out = false;
@@ -36,10 +49,19 @@ class Seller {
             outputSeller = new Seller();
             sellersBase.add(outputSeller);
         }
-        outputSeller.phones.addAll(Arrays.asList(car.getPhones()));
-        outputSeller.names.add(car.getOwnerName());
-        outputSeller.links.add("http://rst.ua/" + car.getLink());
-        return out;
+        outputSeller.phones.addAll(phones);
+        outputSeller.names.addAll(names);
+        outputSeller.links.addAll(links);
+    }
+
+    static int getBaseHash() {
+        int hash = sellersBase.size();
+        for (Seller seller : sellersBase) {
+            hash += seller.names.size();
+            hash += seller.phones.size();
+            hash += seller.links.size();
+        }
+        return hash;
     }
 
     void setPhones(String[] phones) {

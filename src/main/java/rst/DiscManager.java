@@ -42,7 +42,6 @@ class DiscManager {
         Pattern idFromFolder = compile("^\\d{7,}");
         String[] folders = mainDir.list();
         if (folders != null) {
-            nextFolder:
             for (String folder : folders) {
                 Car car = new Car();
                 Matcher m = idFromFolder.matcher(folder);
@@ -65,7 +64,7 @@ class DiscManager {
                         switch (prefix) {
                             case ("isSoldOut"):
                                 if (Boolean.valueOf(value)) {
-                                    continue nextFolder;
+                                    car.setSoldOut();
                                 }
                             case ("brand"):
                                 car.setBrand(value);
@@ -132,8 +131,10 @@ class DiscManager {
                         }
                     }
                     System.out.print(".");
-                    base.put(car.getId(), car);
-                    Seller.isUniqueSeller(car);
+                    Seller.addUniqueSeller(car);
+                    if (!car.isSoldOut()) {
+                        base.put(car.getId(), car);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("Error happens during base initialisation!");
@@ -180,7 +181,7 @@ class DiscManager {
 
     static void writeSellersBase() {
         List<Seller> sellersBase = Seller.getSellersBase();
-        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers2.txt"), StandardCharsets.UTF_8))) {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers.txt"), StandardCharsets.UTF_8))) {
             for (Seller seller : sellersBase) {
                 writer.println("phones=\"" + String.join(", ", seller.getPhones()) + "\"");
                 writer.println("names=\"" + String.join(", ", seller.getNames()) + "\"");
@@ -206,16 +207,15 @@ class DiscManager {
             String line, value, prefix = "";
             Seller seller = new Seller();
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
                 value = getValue(line);
 //                if ((value = getValue(line)) == null) {
 //                    return;
 //                }
                 if (line.equals("********************")) {
-                    sellersBase.add(seller);
+                    Seller.addUniqueSeller(seller);
                     seller = new Seller();
                 }
-                if(value == null) {
+                if (value == null) {
                     continue;
                 }
                 Matcher pref = prefixPattern.matcher(line);

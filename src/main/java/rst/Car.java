@@ -50,7 +50,7 @@ public class Car implements Comparable<Car> {
 
     static {
         DATE_PATTERN = compile("(?:размещено|обновлено).+?((?:\\d{2}\\.){0,2}\\d{2}:?\\d{2})</div>");
-        ID_PATTERN = compile("\\d{7,}\\.html$");
+        ID_PATTERN = compile("(\\d{7,})\\.html$");
         PRICE_PATTERN = compile("данные НБУ\">\\$(\\d{0,3}'?\\d{3})</span>");
         BUILD_YEAR_PATTERN = compile("d-l-i-s\">(\\d{4})");
         DESCRIPTION_PATTERN = compile("-d-d\">(.*?)</div>");
@@ -275,8 +275,7 @@ public class Car implements Comparable<Car> {
         }
         Matcher m2 = ID_PATTERN.matcher(link);
         if (m2.find()) {
-            String ids = m2.group();
-            car.id = Integer.parseInt(ids.substring(0, ids.length() - 5));
+            car.id = Integer.parseInt(m2.group(1));
         }
         car.isSoldOut = carHtml.contains("Уже ПРОДАНО");
         car.freshDetected = carHtml.contains("rst-ocb-i-s-fresh");
