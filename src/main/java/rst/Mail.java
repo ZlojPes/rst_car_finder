@@ -15,13 +15,14 @@ class Mail {
     }
 
     static void sendCar(String subject, Car car, String message) {
-        StringBuilder body = new StringBuilder().append(message).append("\nМарка: ").append(car.getBrand()).append("\nМодель: ").append(car.getModel())
-                .append("\nЦена: ").append(car.getPrice()).append("$\nГод: ").append(car.getBuildYear()).append("\nПробег: ")
-                .append(car.getMileage()).append("\nДобавлен:").append(car.getDetectedDate()).append("\nДобавлен свежим: ")
-                .append(car.isFreshDetected() ? "да" : "нет").append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ")
-                .append(car.getRegion()).append("\nГород: ").append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет")
-                .append("\nописание: ").append(car.getDescription()).append("\nИмя:").append(car.getOwnerName()).append(" - ")
-                .append(car.getPhones()[0].length() > 0 ? car.getPhones()[0] : "").append("\nhttp://rst.ua/").append(car.getLink())
+        StringBuilder body = new StringBuilder().append(message).append("\nМарка: ").append(car.getBrand()).append("\nМодель: ")
+                .append(car.getModel()).append("\nСостояние: ").append(car.getCondition()).append("\nЦена: ").append(car.getPrice())
+                .append("$\nГод: ").append(car.getBuildYear()).append("\nПробег: ").append(car.getMileage()).append("\nДобавлен:")
+                .append(car.getDetectedDate()).append("\nДобавлен свежим: ").append(car.isFreshDetected() ? "да" : "нет")
+                .append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ").append(car.getRegion()).append("\nГород: ")
+                .append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет").append("\nописание: ")
+                .append(car.getDescription()).append("\nИмя:").append(car.getOwnerName()).append(" - ")
+                .append(String.join(", ", car.getPhones())).append("\nhttp://rst.ua/").append(car.getLink())
                 .append("\nИстория изменений:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);
