@@ -31,7 +31,6 @@ public class Explorer {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
         if (DiscManager.initBaseFromDisc(base)) {
-            DiscManager.writeSellersBase();
             deepCheck(false);
         }
         System.out.print("\nScanning html");
@@ -74,7 +73,7 @@ public class Explorer {
                             if (!car.isSoldOut() && car.isCarAlive()) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 car.addDetails();
-                                Seller.addUniqueSeller(car);
+                                Seller.addNewSeller(car);
                                 DiscManager.writeCarOnDisc(car, true);
                                 DiscManager.writeSellersBase();
                                 base.put(id, car);
@@ -178,7 +177,7 @@ public class Explorer {
                 }
                 if (carWasChanged) {
                     DiscManager.writeCarOnDisc(car, false);
-                    Seller.addUniqueSeller(car);
+                    Seller.addNewSeller(car);
                     if (sendMail) {
                         Mail.sendCar("Изменения в авто!", car, "(см. историю изменений)");
                     }

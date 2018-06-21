@@ -22,7 +22,8 @@ class Mail {
                 .append("\nДвигатель: ").append(car.getEngine()).append("\nРегион: ").append(car.getRegion()).append("\nГород: ")
                 .append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет").append("\nописание: ")
                 .append(car.getDescription()).append("\nИмя:").append(car.getOwnerName()).append(" - ")
-                .append(String.join(", ", car.getPhones())).append("\nhttp://rst.ua/").append(car.getLink())
+                .append(String.join(", ", car.getPhonesArray())).append("\nhttp://rst.ua/").append(car.getLink())
+                .append("\nПродавец замечен впервые:").append(Seller.isUniqueSeller(car.getPhones()) ? "да" : "нет")
                 .append("\nИстория изменений:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);

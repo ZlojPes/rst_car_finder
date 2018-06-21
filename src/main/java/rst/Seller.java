@@ -10,7 +10,7 @@ class Seller {
 
     static {
         sellersBase = new ArrayList<>();
-        DiscManager.readSellersBase(sellersBase);
+        DiscManager.readSellersBase();
     }
 
     Seller() {
@@ -19,32 +19,21 @@ class Seller {
         links = new HashSet<>();
     }
 
-    static void addUniqueSeller(Seller seller) {
-        addSeller(seller.phones, seller.names, seller.links);
+    static void addNewSeller(Seller seller) {
+        addSellerToBase(seller.phones, seller.names, seller.links);
     }
 
-    static void addUniqueSeller(Car car) {
-        Set<String> phones = new HashSet<>(Arrays.asList(car.getPhones()));
+    static void addNewSeller(Car car) {
+        Set<String> phones = new HashSet<>(Arrays.asList(car.getPhonesArray()));
         Set<String> names = new HashSet<>();
         names.add(car.getOwnerName());
         Set<String> links = new HashSet<>();
         links.add("http://rst.ua/" + car.getLink());
-        addSeller(phones, names, links);
+        addSellerToBase(phones, names, links);
     }
 
-    private static void addSeller(Set<String> phones, Set<String> names, Set<String> links) {
-        boolean out = true;
-        Seller outputSeller = null;
-        exit:
-        for (Seller seller : sellersBase) {
-            for (String phone : phones) {
-                if (seller.phones.contains(phone)) {
-                    outputSeller = seller;
-                    out = false;
-                    break exit;
-                }
-            }
-        }
+    private static void addSellerToBase(Set<String> phones, Set<String> names, Set<String> links) {
+        Seller outputSeller = findSeller(phones);
         if (outputSeller == null) {
             outputSeller = new Seller();
             sellersBase.add(outputSeller);
@@ -62,6 +51,22 @@ class Seller {
             hash += seller.links.size();
         }
         return hash;
+    }
+
+    static boolean isUniqueSeller(Set<String> phones) {
+        Seller seller = findSeller(phones);
+        return seller != null && seller.links.size() == 1;
+    }
+
+    private static Seller findSeller(Set<String> phones) {
+        for (Seller seller : sellersBase) {
+            for (String phone : phones) {
+                if (seller.phones.contains(phone)) {
+                    return seller;
+                }
+            }
+        }
+        return null;
     }
 
     void setPhones(String[] phones) {
@@ -99,7 +104,7 @@ class Seller {
         return links;
     }
 
-    public static List<Seller> getSellersBase() {
+    static List<Seller> getSellersBase() {
         return sellersBase;
     }
 }

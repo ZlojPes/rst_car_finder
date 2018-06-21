@@ -20,6 +20,7 @@ public class Car implements Comparable<Car> {
     private int price;
     private int buildYear;
     private String description;
+
     private Set<String> phones;
     private Set<Integer> images;
     private boolean isSoldOut;
@@ -96,6 +97,10 @@ public class Car implements Comparable<Car> {
 
     int getMileage() {
         return mileage;
+    }
+
+    Set<String> getPhones() {
+        return phones;
     }
 
     void setMileage(int mileage) {
@@ -211,7 +216,7 @@ public class Car implements Comparable<Car> {
         comments.add(comment);
     }
 
-    String[] getPhones() {
+    String[] getPhonesArray() {
         Iterator<String> iterator = phones.iterator();
         String[] out = new String[phones.size()];
         int counter = 0;

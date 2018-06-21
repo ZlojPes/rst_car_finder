@@ -13,20 +13,15 @@ import static java.util.regex.Pattern.compile;
 
 class DiscManager {
     private static final String mainPath;
+    private static File mainDir;
+    private static Pattern prefixPattern;
 
     static {
-        String path = Explorer.getProp().getProperty("work_directory");
-        if (!path.equals("")) {
-            mainPath = path;
-        } else {
-            System.out.println("Work directory has been set to C:\\%user%\\Documents\\rst");
-            mainPath = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
-        }
+        String def = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
+        mainPath = Explorer.getProp().getProperty("work_directory", def);
+        mainDir = new File(mainPath);
+        prefixPattern = Pattern.compile("^(\\D{4,15})=");
     }
-
-    private static File mainDir = new File(mainPath);
-    private static Pattern prefixPattern = Pattern.compile("^(\\D{4,15})=");
-
 
     static boolean initBaseFromDisc(Map<Integer, Car> base) {
         if (mainDir.exists()) {
@@ -131,7 +126,7 @@ class DiscManager {
                         }
                     }
                     System.out.print(".");
-                    Seller.addUniqueSeller(car);
+                    Seller.addNewSeller(car);
                     if (!car.isSoldOut()) {
                         base.put(car.getId(), car);
                     }
@@ -161,7 +156,7 @@ class DiscManager {
                 writer.println("region=\"" + car.getRegion() + "\"");
                 writer.println("town=\"" + car.getTown() + "\"");
                 writer.println("name=\"" + car.getOwnerName() + "\"");
-                writer.println("contacts=\"" + String.join(", ", car.getPhones()) + "\"");
+                writer.println("contacts=\"" + String.join(", ", car.getPhonesArray()) + "\"");
                 writer.println("description=\"" + car.getDescription() + "\"");
                 writer.println("isFreshDetected=\"" + car.isFreshDetected() + "\"");
                 writer.println("date=\"" + car.getDetectedDate() + "\"");
@@ -197,7 +192,7 @@ class DiscManager {
         }
     }
 
-    static void readSellersBase(List<Seller> sellersBase) {
+    static void readSellersBase() {
         if (!new File(mainDir + "\\sellers.txt").exists()) {
             System.out.println("There's no sellers base!");
             return;
@@ -212,7 +207,7 @@ class DiscManager {
 //                    return;
 //                }
                 if (line.equals("********************")) {
-                    Seller.addUniqueSeller(seller);
+                    Seller.addNewSeller(seller);
                     seller = new Seller();
                 }
                 if (value == null) {
