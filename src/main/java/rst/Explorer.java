@@ -13,10 +13,12 @@ public class Explorer {
     private Map<Integer, Car> base;
     private Pattern carHtmlBlock;
     private static Properties prop;
+    private static Set<String> keys;
 //    private Pattern mainPhotoPattern;
 
     public static void main(String[] args) {
         initProperties();
+        keys = new HashSet<>(Arrays.asList(args));
         Explorer explorer = new Explorer();
         explorer.go();
     }
@@ -30,8 +32,9 @@ public class Explorer {
     private void go() {
         long start = System.currentTimeMillis();
         String startUrl = prop.getProperty("start_url");
+        boolean alwaysSendEmail = keys.contains("-m");
         if (DiscManager.initBaseFromDisc(base)) {
-            deepCheck(false);
+            deepCheck(alwaysSendEmail);
         }
         System.out.print("\nScanning html");
         int pageNum = 1;
@@ -78,15 +81,15 @@ public class Explorer {
                                 DiscManager.writeSellersBase();
                                 base.put(id, car);
                                 report(car);
-                                if (!firstCycle) {
-                                    Mail.sendCar(car);
+                                if (!firstCycle || alwaysSendEmail) {
+                                    Mail.sendCar("Обнаружено новое авто!", car, "Краткое описание:");
                                 }
                                 if (car.getImages() != null) {
                                     imageGetter.downloadImages(car, null);
                                 }
                             } //else ignore this car
                         } else {
-                            checkCarForUpdates(car, !firstCycle);
+                            checkCarForUpdates(car, !firstCycle || alwaysSendEmail);
                         }
                     }
                 }
@@ -163,14 +166,15 @@ public class Explorer {
             Map.Entry<Integer, Car> entry = iterator.next();
             Car car = entry.getValue();
             boolean carWasChanged;
+            String message = "(см. историю изменений)";
             try {
                 String src = HtmlGetter.getURLSource("http://m.rst.ua/" + car.getLink());
                 if (!src.contains(String.valueOf(car.getId())) && src.contains("<p>При использовании материалов, ссылка на RST обязательна.</p>")) {
-                    car.setSoldOut();
-                    String comment = "Объявление удалено! (" + CalendarUtil.getTimeStamp() + ")";
-                    car.addComment(comment);
+                    message = "Объявление удалено! (" + CalendarUtil.getTimeStamp() + ")";
+                    car.addComment(message);
                     System.out.println("\n(" + car.getId() + ")DEL");
                     iterator.remove();
+                    car.setSoldOut();
                     carWasChanged = true;
                 } else {
                     carWasChanged = car.addDetails(src, true);
@@ -179,7 +183,7 @@ public class Explorer {
                     DiscManager.writeCarOnDisc(car, false);
                     Seller.addNewSeller(car);
                     if (sendMail) {
-                        Mail.sendCar("Изменения в авто!", car, "(см. историю изменений)");
+                        Mail.sendCar("Изменения в авто!", car, message);
                     }
                 }
             } catch (IOException e) {

@@ -20,7 +20,7 @@ class DiscManager {
         String def = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
         mainPath = Explorer.getProp().getProperty("work_directory", def);
         mainDir = new File(mainPath);
-        prefixPattern = Pattern.compile("^(\\D{4,15})=");
+        prefixPattern = Pattern.compile("([A-Za-z]{4,15})=");
     }
 
     static boolean initBaseFromDisc(Map<Integer, Car> base) {
@@ -61,6 +61,7 @@ class DiscManager {
                                 if (Boolean.valueOf(value)) {
                                     car.setSoldOut();
                                 }
+                                break;
                             case ("brand"):
                                 car.setBrand(value);
                                 break;
@@ -245,5 +246,21 @@ class DiscManager {
 
     static String getMainPath() {
         return mainPath;
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    static void discardCarFolder(Car car) {
+        String path = mainPath + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
+        File file = new File(path);
+        if (file.exists()) {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                file.renameTo(new File(path + "_x"));
+            }).start();
+        }
     }
 }

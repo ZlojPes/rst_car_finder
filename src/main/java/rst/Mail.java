@@ -10,10 +10,6 @@ import javax.mail.internet.MimeMessage;
 class Mail {
     private static Properties prop = Explorer.getProp();
 
-    static void sendCar(Car car) {
-        sendCar("Обнаружено новое авто!", car, "Краткое описание:");
-    }
-
     static void sendCar(String subject, Car car, String message) {
         StringBuilder body = new StringBuilder().append(message).append("\nМарка: ").append(car.getBrand()).append("\nМодель: ")
                 .append(car.getModel()).append("\nСостояние: ").append(car.getCondition()).append("\nЦена: ").append(car.getPrice())
@@ -23,7 +19,7 @@ class Mail {
                 .append(car.getTown()).append("\nОбмен: ").append(car.isExchange() ? "да" : "нет").append("\nописание: ")
                 .append(car.getDescription()).append("\nИмя:").append(car.getOwnerName()).append(" - ")
                 .append(String.join(", ", car.getPhonesArray())).append("\nhttp://rst.ua/").append(car.getLink())
-                .append("\nПродавец замечен впервые:").append(Seller.isUniqueSeller(car.getPhones()) ? "да" : "нет")
+                .append("\nПродавец замечен впервые: ").append(Seller.isUniqueSeller(car.getPhones()) ? "да" : "нет")
                 .append("\nИстория изменений:");
         for (String comment : car.getComments()) {
             body.append("\n").append(comment);

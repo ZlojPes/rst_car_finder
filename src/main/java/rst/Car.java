@@ -258,6 +258,7 @@ public class Car implements Comparable<Car> {
 
     void setSoldOut() {
         isSoldOut = true;
+        DiscManager.discardCarFolder(this);
     }
 
     boolean isFreshDetected() {
