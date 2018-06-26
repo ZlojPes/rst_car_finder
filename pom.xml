@@ -6,7 +6,7 @@
 
     <groupId>com.ospavliuk</groupId>
     <artifactId>rst-car-finder</artifactId>
-    <version>1.0.1</version>
+    <version>1.2.1</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,7 +25,7 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <outputDirectory>target/classes</outputDirectory>
-        <finalName>rst_1.0.1</finalName>
+        <finalName>rst_1.2.1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
