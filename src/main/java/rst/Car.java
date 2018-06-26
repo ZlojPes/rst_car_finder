@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
 
-public class Car implements Comparable<Car> {
+class Car {
     private int id;
     private String brand;
     private String model;
@@ -241,7 +241,6 @@ public class Car implements Comparable<Car> {
 
     String getDetectedDate() {
         return CalendarUtil.fullDateFormat.format(firstTimeDetected);
-
     }
 
     String getDescription() {
@@ -264,7 +263,6 @@ public class Car implements Comparable<Car> {
     boolean isFreshDetected() {
         return freshDetected;
     }
-
 
     static Car getCarFromHtml(String carHtml) {
         Car car = new Car();
@@ -418,25 +416,5 @@ public class Car implements Comparable<Car> {
             }
         }
         return carWasChanged;
-    }
-
-    @Override
-    public int compareTo(Car o) {
-        return Integer.compare(this.id, o.id);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Car car = (Car) o;
-
-        return id == car.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 }

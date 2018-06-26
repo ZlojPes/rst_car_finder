@@ -34,10 +34,13 @@ public class Explorer {
         String startUrl = prop.getProperty("start_url");
         boolean alwaysSendEmail = keys.contains("-m");
         if (DiscManager.initBaseFromDisc(base)) {
+            System.out.println(base.size() + " alive cars found and added to base");
+            System.out.print("Checking each car...");
             deepCheck(alwaysSendEmail);
+            System.out.println("complete");
         }
-        System.out.print("\nScanning html");
-        int pageNum = 1;
+        System.out.print("Scanning html");
+        int pageNum = 1, previousCycleMaxPage = 1000;
         int topId = 0, markerId = 0;
         long startCycle, fullDelay = Integer.parseInt(prop.getProperty("page_load_interval_seconds")) * 1000;
         long deepCheckDelay = Integer.parseInt(prop.getProperty("deep_check_interval_hours")) * 3600000;
@@ -58,14 +61,15 @@ public class Explorer {
                         if (carsHtml.indexOf(carHtml) == 0) {
                             topId = id;
                         }
-                        if (markerId == id || pageNum == 1000) {
+                        if (markerId == id || pageNum -1 > previousCycleMaxPage) {
                             markerId = topId;
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
                                         ((System.currentTimeMillis() - start) / 1000) + "s), repeating");
                             } else {
-                                System.out.print("/");
+                                System.out.print("|");
                             }
+                            previousCycleMaxPage = pageNum;
                             pageNum = 1;
                             firstCycle = false;
                         }
