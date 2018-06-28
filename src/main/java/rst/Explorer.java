@@ -17,10 +17,16 @@ public class Explorer {
 //    private Pattern mainPhotoPattern;
 
     public static void main(String[] args) {
-        initProperties();
-        keys = new HashSet<>(Arrays.asList(args));
-        Explorer explorer = new Explorer();
-        explorer.go();
+        try {
+            initProperties();
+            keys = new HashSet<>(Arrays.asList(args));
+            Explorer explorer = new Explorer();
+            explorer.go();
+        } catch (Exception e) {
+            String message = "Произошла критическая ошибка во время работы программы. Необходим перезапуск!\n" +
+                    "Трассировка исключения" + Arrays.toString(e.getStackTrace());
+            Mail.alarmByEmail("Необходим перезапуск программы!", message);
+        }
     }
 
     private Explorer() {
