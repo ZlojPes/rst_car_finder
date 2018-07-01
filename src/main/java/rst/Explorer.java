@@ -67,7 +67,7 @@ public class Explorer {
                         if (carsHtml.indexOf(carHtml) == 0) {
                             topId = id;
                         }
-                        if (markerId == id || pageNum -1 > previousCycleMaxPage) {
+                        if (markerId == id || pageNum - 1 > previousCycleMaxPage) {
                             markerId = topId;
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
@@ -113,7 +113,7 @@ public class Explorer {
                 String err = e.getMessage();
                 System.out.print(err);
                 if (err.contains("403 for URL")) {
-                    Mail.alarmByEmail("Ahtung!!!", "Всё пропало!\n403 FORBIDDEN!");
+                    Mail.alarmByEmail("Критический сбой!", "Сервер заблокировал доступ\n403 FORBIDDEN!");
                     System.exit(1);
                 }
                 try {
@@ -143,7 +143,7 @@ public class Explorer {
             System.out.print("\n" + comment + " - " + carFromSite.getId());
         }
         String desc = carFromSite.getDescription(), oldDesc = carFromBase.getDescription();
-        if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
+        if (desc != null && !desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
             hasChanges = true;
             String comment = "Старое описание: " + carFromBase.getDescription() + " (" + CalendarUtil.getTimeStamp() + ")";
             carFromBase.addComment(comment);
