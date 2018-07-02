@@ -143,7 +143,7 @@ public class Explorer {
             System.out.print("\n" + comment + " - " + carFromSite.getId());
         }
         String desc = carFromSite.getDescription(), oldDesc = carFromBase.getDescription();
-        if (desc != null && !desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
+        if (!desc.equals("big") && !desc.equals(oldDesc) && !desc.equals("") && oldDesc.length() < 120) {
             hasChanges = true;
             String comment = "Старое описание: " + carFromBase.getDescription() + " (" + CalendarUtil.getTimeStamp() + ")";
             carFromBase.addComment(comment);

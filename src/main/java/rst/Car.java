@@ -244,7 +244,7 @@ class Car {
     }
 
     String getDescription() {
-        return description;
+        return description == null ? "" : description;
     }
 
     void setDescription(String description) {
