@@ -20,7 +20,7 @@ class Car {
     private int price;
     private int buildYear;
     private String description;
-
+    private boolean isPremium;
     private Set<String> phones;
     private Set<Integer> images;
     private boolean isSoldOut;
@@ -109,6 +109,10 @@ class Car {
 
     void setId(int id) {
         this.id = id;
+    }
+
+    boolean isPremium() {
+        return isPremium;
     }
 
     void setBrand(String brand) {
@@ -284,6 +288,7 @@ class Car {
         car.isSoldOut = carHtml.contains("Уже ПРОДАНО");
         car.freshDetected = carHtml.contains("rst-ocb-i-s-fresh");
         car.exchange = carHtml.contains("ocb-i-exchange");
+        car.isPremium = carHtml.contains("Премиум объявление");
         Matcher m3 = PRICE_PATTERN.matcher(carHtml);
         if (m3.find()) {
             char[] priceArray = m3.group(1).toCharArray();
@@ -392,6 +397,7 @@ class Car {
                         addComment("Добавлен телефон: " + tel.group(1) + " " + CalendarUtil.getTimeStamp());
                     }
                 }
+//                System.out.println(tel.group(1) + "-" + id + "\n*******");
             }
         }
         Matcher photo = PHOTO_PATTERN.matcher(src);

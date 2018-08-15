@@ -67,13 +67,15 @@ public class Explorer {
                         if (carsHtml.indexOf(carHtml) == 0) {
                             topId = id;
                         }
-                        if (markerId == id || pageNum - 1 > previousCycleMaxPage) {
+                        if (markerId == id || pageNum - 1 > previousCycleMaxPage || (!car.isCarAlive() && !car.isPremium() && !firstCycle)) {
                             markerId = topId;
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
                                         ((System.currentTimeMillis() - start) / 1000) + "s), repeating");
                             } else {
-                                System.out.print("|");
+                                if (pageNum != 1) {
+                                    System.out.print("|");
+                                }
                             }
                             previousCycleMaxPage = pageNum;
                             pageNum = 1;

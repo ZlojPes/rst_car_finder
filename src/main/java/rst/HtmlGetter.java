@@ -9,7 +9,9 @@ public class HtmlGetter {
     static String getURLSource(String url) throws IOException {
         URL urlObject = new URL(url);
         URLConnection urlConnection = urlObject.openConnection();
-        urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36");
+        urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0");
+        urlConnection.setRequestProperty("Referer", "http://rst.ua/oldcars/daewoo/lanos/");
+        urlConnection.setRequestProperty("Cookie", "_rst=5b71d42c244f71.96947827.18; __utma=220962331.1453490248.1534186539.1534200411.1534352755.4; __utmz=220962331.1534186539.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); _rst_u=5b71d7e89be2f7.49225810.17; PHPSESSID=68901vn436sp42hs4hhc6iusi2; __utmc=220962331; c8557071a593cd9c53c8af71a2b542a8=d0d8456be7c273eb21abb83ce6e24ccf; __utmb=220962331.1.10.1534352756; __utmt=1");
         return toString(urlConnection.getInputStream());
     }
 
@@ -19,7 +21,7 @@ public class HtmlGetter {
             String inputLine;
             StringBuilder stringBuilder = new StringBuilder();
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "Cp1251"))
-//                 ;BufferedWriter writer = new BufferedWriter(new FileWriter(new File("d:\\httpGetterOut.txt")))
+//                 ;BufferedWriter writer = new BufferedWriter(new FileWriter(new File("d:\\httpGetterOut.htm")))
             ) {
                 while ((inputLine = bufferedReader.readLine()) != null) {
                     stringBuilder.append(inputLine);
@@ -49,7 +51,7 @@ public class HtmlGetter {
 
     public static void main(String[] args) {
         try {
-            System.out.println(getURLSource("http://rst.ua/oldcars/daewoo/sens/daewoo_sens_8331344.html"));
+            System.out.println(getURLSource("http://m.rst.ua/oldcars/opel/omega/opel_omega_8063720.html"));
         } catch (IOException e) {
             e.printStackTrace();
         }

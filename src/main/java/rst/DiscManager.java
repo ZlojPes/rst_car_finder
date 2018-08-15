@@ -17,7 +17,7 @@ class DiscManager {
     private static Pattern prefixPattern;
 
     static {
-        String def = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\rst";
+        String def = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "/rst";
         mainPath = Explorer.getProp().getProperty("work_directory", def);
         mainDir = new File(mainPath);
         prefixPattern = Pattern.compile("([A-Za-z]{4,15})=");
@@ -46,7 +46,7 @@ class DiscManager {
                     continue;
                 }
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                        mainPath + "\\" + folder + "\\data.txt"), "UTF-8"))) {
+                        mainPath + "/" + folder + "/data.txt"), StandardCharsets.UTF_8))) {
                     String line, value, prefix = "";
                     while ((line = reader.readLine()) != null) {
                         if ((value = getValue(line)) == null) {
@@ -142,9 +142,9 @@ class DiscManager {
     }
 
     static void writeCarOnDisc(Car car, boolean createFolder) {
-        String path = mainPath + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
+        String path = mainPath + "/" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
         if (!createFolder || new File(path).mkdir()) {
-            try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path + "\\data.txt"), StandardCharsets.UTF_8))) {
+            try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path + "/data.txt"), StandardCharsets.UTF_8))) {
                 writer.println("isSoldOut=\"" + car.isSoldOut() + "\"");
                 writer.println("brand=\"" + car.getBrand() + "\"");
                 writer.println("model=\"" + car.getModel() + "\"");
@@ -177,8 +177,11 @@ class DiscManager {
 
     static void writeSellersBase() {
         List<Seller> sellersBase = Seller.getSellersBase();
-        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "\\sellers.txt"), StandardCharsets.UTF_8))) {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(mainPath + "/sellers.txt"), StandardCharsets.UTF_8))) {
             for (Seller seller : sellersBase) {
+                if (seller.getPhones().length == 0) {
+                    continue;
+                }
                 writer.println("phones=\"" + String.join(", ", seller.getPhones()) + "\"");
                 writer.println("names=\"" + String.join(", ", seller.getNames()) + "\"");
                 for (String link : seller.getLinks()) {
@@ -194,12 +197,12 @@ class DiscManager {
     }
 
     static void readSellersBase() {
-        if (!new File(mainDir + "\\sellers.txt").exists()) {
+        if (!new File(mainDir + "/sellers.txt").exists()) {
             System.out.println("There's no sellers base!");
             return;
         }
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(
-                mainPath + "\\sellers.txt"), "UTF-8"))) {
+                mainPath + "/sellers.txt"), StandardCharsets.UTF_8))) {
             String line, value, prefix = "";
             Seller seller = new Seller();
             while ((line = reader.readLine()) != null) {
@@ -250,7 +253,7 @@ class DiscManager {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     static void discardCarFolder(Car car) {
-        String path = mainPath + "\\" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
+        String path = mainPath + "/" + car.getId() + "_" + car.getBrand() + "_" + car.getModel();
         File file = new File(path);
         if (file.exists()) {
             new Thread(() -> {
