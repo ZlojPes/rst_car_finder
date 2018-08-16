@@ -83,7 +83,7 @@ public class Explorer {
                                 }
                             }
                         }
-                        if (markerId == 0) {
+                        if (markerId == 0 || pageNum == 1) {
                             markerId = topId;
                         }
                         if (!base.containsKey(id)) {
