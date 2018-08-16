@@ -67,19 +67,21 @@ public class Explorer {
                         if (carsHtml.indexOf(carHtml) == 0) {
                             topId = id;
                         }
-                        if (markerId == id || pageNum - 1 > previousCycleMaxPage || (!car.isCarAlive() && !car.isPremium() && !firstCycle)) {
+                        if (markerId == id || (!car.isCarAlive() && !car.isPremium() && !firstCycle || pageNum - 1 > previousCycleMaxPage)) {
                             markerId = topId;
                             if (firstCycle) {
                                 System.out.print("\nPage " + (pageNum - 1) + " is last (" +
                                         ((System.currentTimeMillis() - start) / 1000) + "s), repeating");
+                                previousCycleMaxPage = pageNum;
+                                pageNum = 1;
+                                firstCycle = false;
                             } else {
-                                if (pageNum != 1) {
+                                if (pageNum != 0) {
                                     System.out.print("|");
+                                    previousCycleMaxPage = pageNum;
+                                    pageNum = 0;
                                 }
                             }
-                            previousCycleMaxPage = pageNum;
-                            pageNum = 1;
-                            firstCycle = false;
                         }
                         if (markerId == 0) {
                             markerId = topId;
