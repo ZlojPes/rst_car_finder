@@ -40,7 +40,7 @@ public class Explorer {
         String startUrl = prop.getProperty("start_url");
         boolean alwaysSendEmail = keys.contains("-m");
         if (DiscManager.initBaseFromDisc(base)) {
-            System.out.println(base.size() + " alive cars found and added to base");
+            System.out.println(base.size() + " cars found and added to base");
             System.out.print("Checking each car...");
             deepCheck(alwaysSendEmail);
             System.out.println("complete");
@@ -87,7 +87,7 @@ public class Explorer {
                             markerId = topId;
                         }
                         if (!base.containsKey(id)) {
-                            if (!car.isSoldOut() && car.isCarAlive()) { //Add car to base
+                            if (!car.isSoldOut() && (car.isCarAlive() || firstCycle)) { //Add car to base
                                 ImageGetter imageGetter = new ImageGetter();
                                 car.addDetails();
                                 Seller.addNewSeller(car);
